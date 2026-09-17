@@ -107,56 +107,58 @@ export const HomePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 transition-colors">
+    <div className="min-h-screen flex flex-col bg-[#0e0e13] text-[#f9f5fd] selection:bg-[#6C63FF] selection:text-white transition-colors">
       {/* Sticky Glass Navbar */}
       <Navbar />
 
       {/* Centered Hero & Content */}
-      <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 flex flex-col justify-center items-center w-full">
-        {/* Hero Header */}
-        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-100 dark:bg-white/[0.04] border border-zinc-200 dark:border-white/[0.08] text-xs text-zinc-600 dark:text-zinc-400 mb-5">
-            <Sparkles className="w-3.5 h-3.5 text-sky-500" />
-            <span className="font-medium text-[11px]">Synchronized Watch Parties</span>
+      <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 flex flex-col justify-center items-center w-full">
+        {/* Hero Header - Asymmetric Monolith feel */}
+        <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
+          {/* Metadata Chip */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#19191f] border border-[#a8a4ff]/25 text-xs text-[#acaab1] mb-6">
+            <Sparkles className="w-3.5 h-3.5 text-[#00d2fd]" />
+            <span className="space-label text-[10px] tracking-wider text-[#00d2fd]">KINETIC SYNC ENGINE V2.0</span>
           </div>
 
-          {/* Headline */}
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-zinc-900 dark:text-white leading-[1.12]">
+          {/* Monolithic Headline */}
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-[#f9f5fd] leading-[1.08] font-sans">
             Watch YouTube Together in{' '}
-            <span className="text-sky-500 dark:text-sky-400">Real-Time</span>
+            <span className="text-kinetic">Real-Time</span>
           </h1>
 
           {/* Subtext */}
-          <p className="mt-4 text-sm sm:text-base text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-lg mx-auto">
+          <p className="mt-5 text-sm sm:text-base text-[#acaab1] leading-relaxed max-w-xl mx-auto font-sans">
             Host synchronized watch parties with sub-second latency. Built-in role permissions, synchronized playback, and live chat.
           </p>
         </div>
 
-        {/* Action Cards Grid: Equal-height & Equal-width */}
+        {/* Action Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl mx-auto items-stretch">
           {/* Create Room Card */}
-          <div className="glass-elevated rounded-2xl p-6 sm:p-7 flex flex-col justify-between border border-zinc-200 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.03]">
+          <div className="glass-elevated rounded-2xl p-6 sm:p-8 flex flex-col justify-between border border-[#a8a4ff]/20 bg-[#131319]/90 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#6C63FF]/10 rounded-full blur-3xl pointer-events-none"></div>
+
             <div>
-              <div className="flex items-center justify-between gap-3 mb-5">
+              <div className="flex items-center justify-between gap-3 mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-white/[0.06] border border-zinc-200 dark:border-white/[0.08] flex items-center justify-center text-sky-500">
+                  <div className="w-9 h-9 rounded-xl bg-[#19191f] border border-[#6C63FF]/30 flex items-center justify-center text-[#a8a4ff]">
                     <PlusCircle className="w-4 h-4" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Create Party</h2>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">Launch a room as Host</p>
+                    <h2 className="text-base font-bold text-[#f9f5fd] font-space">Create Party</h2>
+                    <p className="text-xs text-[#acaab1]">Launch a room as Host</p>
                   </div>
                 </div>
-                <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-zinc-100 dark:bg-white/[0.05] text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-white/[0.08]">
-                  Host
+                <span className="text-[10px] space-label px-2.5 py-1 rounded bg-[#19191f] text-amber-400 border border-amber-500/20 font-bold">
+                  HOST
                 </span>
               </div>
 
-              <form onSubmit={handleCreateRoom} className="space-y-3.5">
+              <form onSubmit={handleCreateRoom} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                    Display Name
+                  <label className="block text-xs font-semibold space-label text-[#acaab1] mb-1.5">
+                    DISPLAY NAME
                   </label>
                   <div className="relative">
                     <input
@@ -164,15 +166,15 @@ export const HomePage: React.FC = () => {
                       placeholder="e.g. Alex (Host)"
                       value={createUsername}
                       onChange={(e) => setCreateUsername(e.target.value)}
-                      className="w-full glass-input rounded-lg px-3.5 py-2.5 pl-9 text-xs focus:outline-none"
+                      className="w-full glass-input rounded-xl px-4 py-2.5 pl-10 text-xs focus:outline-none"
                     />
-                    <User className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 absolute left-3 top-3" />
+                    <User className="w-4 h-4 text-[#76747b] absolute left-3.5 top-3" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                    Custom Room Code <span className="text-zinc-400 font-normal">(Optional)</span>
+                  <label className="block text-xs font-semibold space-label text-[#acaab1] mb-1.5">
+                    CUSTOM ROOM CODE <span className="text-[#76747b] font-normal lowercase">(optional)</span>
                   </label>
                   <div className="relative">
                     <input
@@ -180,15 +182,15 @@ export const HomePage: React.FC = () => {
                       placeholder="Leave empty for random"
                       value={customRoomId}
                       onChange={(e) => setCustomRoomId(e.target.value)}
-                      className="w-full glass-input rounded-lg px-3.5 py-2.5 pl-9 text-xs font-mono focus:outline-none"
+                      className="w-full glass-input rounded-xl px-4 py-2.5 pl-10 text-xs font-mono focus:outline-none"
                     />
-                    <Hash className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 absolute left-3 top-3" />
+                    <Hash className="w-4 h-4 text-[#76747b] absolute left-3.5 top-3" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                    Initial YouTube Video <span className="text-zinc-400 font-normal">(Optional)</span>
+                  <label className="block text-xs font-semibold space-label text-[#acaab1] mb-1.5">
+                    INITIAL YOUTUBE VIDEO <span className="text-[#76747b] font-normal lowercase">(optional)</span>
                   </label>
                   <div className="relative">
                     <input
@@ -196,27 +198,27 @@ export const HomePage: React.FC = () => {
                       placeholder="Paste YouTube URL or ID"
                       value={initialVideoUrl}
                       onChange={(e) => setInitialVideoUrl(e.target.value)}
-                      className="w-full glass-input rounded-lg px-3.5 py-2.5 pl-9 text-xs font-mono focus:outline-none"
+                      className="w-full glass-input rounded-xl px-4 py-2.5 pl-10 text-xs font-mono focus:outline-none"
                     />
-                    <Video className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 absolute left-3 top-3" />
+                    <Video className="w-4 h-4 text-[#76747b] absolute left-3.5 top-3" />
                   </div>
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-3">
                   <button
                     type="submit"
                     disabled={isCreating}
-                    className="w-full py-2.5 px-4 rounded-lg bg-sky-500 hover:bg-sky-400 active:scale-[0.98] text-black font-semibold text-xs transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full btn-kinetic py-3 px-4 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isCreating ? (
                       <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>Initializing...</span>
+                        <Loader2 className="w-4 h-4 animate-spin text-black" />
+                        <span>INITIALIZING...</span>
                       </>
                     ) : (
                       <>
-                        <span>Create & Launch Party</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
+                        <span>CREATE & LAUNCH PARTY</span>
+                        <ArrowRight className="w-4 h-4" />
                       </>
                     )}
                   </button>
@@ -226,27 +228,29 @@ export const HomePage: React.FC = () => {
           </div>
 
           {/* Join Room Card */}
-          <div className="glass-elevated rounded-2xl p-6 sm:p-7 flex flex-col justify-between border border-zinc-200 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.03]">
+          <div className="glass-elevated rounded-2xl p-6 sm:p-8 flex flex-col justify-between border border-white/10 bg-[#131319]/90 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#00D4FF]/10 rounded-full blur-3xl pointer-events-none"></div>
+
             <div>
-              <div className="flex items-center justify-between gap-3 mb-5">
+              <div className="flex items-center justify-between gap-3 mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-white/[0.06] border border-zinc-200 dark:border-white/[0.08] flex items-center justify-center text-sky-500">
+                  <div className="w-9 h-9 rounded-xl bg-[#19191f] border border-[#00D4FF]/30 flex items-center justify-center text-[#00d2fd]">
                     <LogIn className="w-4 h-4" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Join Party</h2>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">Enter code or invite link</p>
+                    <h2 className="text-base font-bold text-[#f9f5fd] font-space">Join Party</h2>
+                    <p className="text-xs text-[#acaab1]">Enter code or invite link</p>
                   </div>
                 </div>
-                <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-zinc-100 dark:bg-white/[0.05] text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-white/[0.08]">
-                  Viewer
+                <span className="text-[10px] space-label px-2.5 py-1 rounded bg-[#19191f] text-[#00d2fd] border border-[#00d2fd]/20 font-bold">
+                  VIEWER
                 </span>
               </div>
 
-              <form onSubmit={handleJoinRoom} className="space-y-3.5">
+              <form onSubmit={handleJoinRoom} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                    Room Code or URL <span className="text-rose-500">*</span>
+                  <label className="block text-xs font-semibold space-label text-[#acaab1] mb-1.5">
+                    ROOM CODE OR URL <span className="text-rose-400">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -258,15 +262,15 @@ export const HomePage: React.FC = () => {
                         setErrorMessage('');
                       }}
                       required
-                      className="w-full glass-input rounded-lg px-3.5 py-2.5 pl-9 text-xs font-mono focus:outline-none"
+                      className="w-full glass-input rounded-xl px-4 py-2.5 pl-10 text-xs font-mono focus:outline-none"
                     />
-                    <LinkIcon className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 absolute left-3 top-3" />
+                    <LinkIcon className="w-4 h-4 text-[#76747b] absolute left-3.5 top-3" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                    Display Name
+                  <label className="block text-xs font-semibold space-label text-[#acaab1] mb-1.5">
+                    DISPLAY NAME
                   </label>
                   <div className="relative">
                     <input
@@ -274,31 +278,31 @@ export const HomePage: React.FC = () => {
                       placeholder="e.g. Sarah (Viewer)"
                       value={joinUsername}
                       onChange={(e) => setJoinUsername(e.target.value)}
-                      className="w-full glass-input rounded-lg px-3.5 py-2.5 pl-9 text-xs focus:outline-none"
+                      className="w-full glass-input rounded-xl px-4 py-2.5 pl-10 text-xs focus:outline-none"
                     />
-                    <User className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 absolute left-3 top-3" />
+                    <User className="w-4 h-4 text-[#76747b] absolute left-3.5 top-3" />
                   </div>
                 </div>
 
                 {errorMessage && (
-                  <p className="text-xs text-rose-500 font-medium">{errorMessage}</p>
+                  <p className="text-xs text-rose-400 font-medium">{errorMessage}</p>
                 )}
 
                 <div className="pt-8">
                   <button
                     type="submit"
                     disabled={isJoining}
-                    className="w-full py-2.5 px-4 rounded-lg bg-sky-500 hover:bg-sky-400 active:scale-[0.98] text-black font-semibold text-xs transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-3 px-4 rounded-xl bg-[#19191f] hover:bg-[#25252d] border border-[#00D4FF]/40 text-[#00d2fd] font-space font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-cyan-bloom"
                   >
                     {isJoining ? (
                       <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>Joining Party...</span>
+                        <Loader2 className="w-4 h-4 animate-spin text-[#00d2fd]" />
+                        <span>JOINING PARTY...</span>
                       </>
                     ) : (
                       <>
-                        <span>Join Watch Party</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
+                        <span>JOIN WATCH PARTY</span>
+                        <ArrowRight className="w-4 h-4" />
                       </>
                     )}
                   </button>
@@ -308,51 +312,51 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Feature Grid: 4 Subtle Equal-Height Panels */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-4xl mx-auto mt-12">
-          <div className="glass-base rounded-xl p-4 border border-zinc-200 dark:border-white/[0.08] bg-white/60 dark:bg-white/[0.02] flex flex-col justify-between">
+        {/* Feature Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-4xl mx-auto mt-14">
+          <div className="glass-base rounded-xl p-5 border border-white/10 bg-[#131319]/80 flex flex-col justify-between hover:border-[#6C63FF]/30 transition-all">
             <div>
-              <div className="w-7 h-7 rounded-md bg-zinc-100 dark:bg-white/[0.06] border border-zinc-200 dark:border-white/[0.08] flex items-center justify-center text-zinc-700 dark:text-zinc-300 mb-2.5">
-                <Zap className="w-3.5 h-3.5" />
+              <div className="w-8 h-8 rounded-lg bg-[#19191f] border border-white/10 flex items-center justify-center text-[#a8a4ff] mb-3">
+                <Zap className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-semibold text-zinc-900 dark:text-white">Sub-second Sync</h4>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
+              <h4 className="text-xs font-bold text-[#f9f5fd] space-label">SUB-SECOND SYNC</h4>
+              <p className="text-[11px] text-[#acaab1] mt-1.5 leading-relaxed">
                 Ultra-low latency real-time player synchronization.
               </p>
             </div>
           </div>
 
-          <div className="glass-base rounded-xl p-4 border border-zinc-200 dark:border-white/[0.08] bg-white/60 dark:bg-white/[0.02] flex flex-col justify-between">
+          <div className="glass-base rounded-xl p-5 border border-white/10 bg-[#131319]/80 flex flex-col justify-between hover:border-[#00D4FF]/30 transition-all">
             <div>
-              <div className="w-7 h-7 rounded-md bg-zinc-100 dark:bg-white/[0.06] border border-zinc-200 dark:border-white/[0.08] flex items-center justify-center text-zinc-700 dark:text-zinc-300 mb-2.5">
-                <Shield className="w-3.5 h-3.5" />
+              <div className="w-8 h-8 rounded-lg bg-[#19191f] border border-white/10 flex items-center justify-center text-[#00d2fd] mb-3">
+                <Shield className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-semibold text-zinc-900 dark:text-white">RBAC Controls</h4>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
+              <h4 className="text-xs font-bold text-[#f9f5fd] space-label">RBAC CONTROLS</h4>
+              <p className="text-[11px] text-[#acaab1] mt-1.5 leading-relaxed">
                 Role-based playback permissions for Hosts and Viewers.
               </p>
             </div>
           </div>
 
-          <div className="glass-base rounded-xl p-4 border border-zinc-200 dark:border-white/[0.08] bg-white/60 dark:bg-white/[0.02] flex flex-col justify-between">
+          <div className="glass-base rounded-xl p-5 border border-white/10 bg-[#131319]/80 flex flex-col justify-between hover:border-[#6C63FF]/30 transition-all">
             <div>
-              <div className="w-7 h-7 rounded-md bg-zinc-100 dark:bg-white/[0.06] border border-zinc-200 dark:border-white/[0.08] flex items-center justify-center text-zinc-700 dark:text-zinc-300 mb-2.5">
-                <Users className="w-3.5 h-3.5" />
+              <div className="w-8 h-8 rounded-lg bg-[#19191f] border border-white/10 flex items-center justify-center text-[#a8a4ff] mb-3">
+                <Users className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-semibold text-zinc-900 dark:text-white">Auto-Transfer</h4>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
+              <h4 className="text-xs font-bold text-[#f9f5fd] space-label">AUTO-TRANSFER</h4>
+              <p className="text-[11px] text-[#acaab1] mt-1.5 leading-relaxed">
                 Automatic leadership failover if the host disconnects.
               </p>
             </div>
           </div>
 
-          <div className="glass-base rounded-xl p-4 border border-zinc-200 dark:border-white/[0.08] bg-white/60 dark:bg-white/[0.02] flex flex-col justify-between">
+          <div className="glass-base rounded-xl p-5 border border-white/10 bg-[#131319]/80 flex flex-col justify-between hover:border-[#00D4FF]/30 transition-all">
             <div>
-              <div className="w-7 h-7 rounded-md bg-zinc-100 dark:bg-white/[0.06] border border-zinc-200 dark:border-white/[0.08] flex items-center justify-center text-zinc-700 dark:text-zinc-300 mb-2.5">
-                <Film className="w-3.5 h-3.5" />
+              <div className="w-8 h-8 rounded-lg bg-[#19191f] border border-white/10 flex items-center justify-center text-[#00d2fd] mb-3">
+                <Film className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-semibold text-zinc-900 dark:text-white">Live Chat</h4>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
+              <h4 className="text-xs font-bold text-[#f9f5fd] space-label">LIVE CHAT</h4>
+              <p className="text-[11px] text-[#acaab1] mt-1.5 leading-relaxed">
                 Real-time room chat with participant status badges.
               </p>
             </div>

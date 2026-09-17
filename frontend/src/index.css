@@ -3,40 +3,39 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --bg-main: #fcfcfd;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f4f4f5;
-  --bg-glass-base: rgba(255, 255, 255, 0.85);
-  --bg-glass-elevated: rgba(255, 255, 255, 0.95);
-  --border-glass-base: rgba(24, 24, 27, 0.08);
-  --border-glass-elevated: rgba(24, 24, 27, 0.12);
+  --bg-main: #0e0e13;
+  --bg-card: #19191f;
+  --bg-card-hover: #25252d;
+  --bg-glass-base: rgba(25, 25, 31, 0.6);
+  --bg-glass-elevated: rgba(37, 37, 45, 0.75);
+  --border-glass-base: rgba(72, 71, 77, 0.15);
+  --border-glass-elevated: rgba(168, 164, 255, 0.25);
 
-  --accent: #0ea5e9;
-  --accent-hover: #0284c7;
+  --accent-violet: #6C63FF;
+  --accent-cyan: #00D4FF;
+  --accent: #a8a4ff;
 
-  --text-main: #09090b;
-  --text-muted: #71717a;
-  --text-dim: #a1a1aa;
+  --text-main: #f9f5fd;
+  --text-muted: #acaab1;
+  --text-dim: #76747b;
 
-  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Space Grotesk', 'JetBrains Mono', monospace;
+  --font-space: 'Space Grotesk', sans-serif;
 }
 
 .dark {
-  --bg-main: #000000;
-  --bg-card: #09090b;
-  --bg-card-hover: #121215;
-  --bg-glass-base: rgba(255, 255, 255, 0.03);
-  --bg-glass-elevated: rgba(255, 255, 255, 0.05);
-  --border-glass-base: rgba(255, 255, 255, 0.08);
-  --border-glass-elevated: rgba(255, 255, 255, 0.12);
+  --bg-main: #0e0e13;
+  --bg-card: #19191f;
+  --bg-card-hover: #25252d;
+  --bg-glass-base: rgba(25, 25, 31, 0.65);
+  --bg-glass-elevated: rgba(37, 37, 45, 0.8);
+  --border-glass-base: rgba(72, 71, 77, 0.2);
+  --border-glass-elevated: rgba(168, 164, 255, 0.3);
 
-  --accent: #0ea5e9;
-  --accent-hover: #38bdf8;
-
-  --text-main: #fafafa;
-  --text-muted: #a1a1aa;
-  --text-dim: #71717a;
+  --text-main: #f9f5fd;
+  --text-muted: #acaab1;
+  --text-dim: #76747b;
 }
 
 * {
@@ -54,7 +53,7 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* OLED Glassmorphism System */
+/* Etheric Velocity OLED Glassmorphism System */
 .glass-base {
   background-color: var(--bg-glass-base);
   backdrop-filter: blur(12px);
@@ -64,33 +63,60 @@ body {
 
 .glass-elevated {
   background-color: var(--bg-glass-elevated);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-glass-elevated);
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 20px 40px rgba(108, 99, 255, 0.08);
 }
 
 .glass-input {
-  background-color: rgba(244, 244, 245, 0.8);
-  border: 1px solid rgba(24, 24, 27, 0.12);
+  background-color: #000000;
+  border: 1px solid rgba(72, 71, 77, 0.2);
+  color: #f9f5fd;
   transition: all 0.15s ease;
 }
 
-.dark .glass-input {
-  background-color: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
 .glass-input:focus {
-  background-color: #ffffff;
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 1px #0ea5e9;
+  background-color: #0e0e13;
+  border-color: #00D4FF;
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.25);
+  outline: none;
 }
 
-.dark .glass-input:focus {
-  background-color: #09090b;
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 1px #0ea5e9;
+.ghost-border {
+  border: 1px solid rgba(72, 71, 77, 0.18);
+}
+
+/* Kinetic Gradient Elements */
+.btn-kinetic {
+  background: linear-gradient(135deg, #6C63FF 0%, #00D4FF 100%);
+  color: #000000;
+  font-family: var(--font-space);
+  font-weight: 700;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 20px rgba(108, 99, 255, 0.25);
+}
+
+.btn-kinetic:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 30px rgba(0, 212, 255, 0.4);
+}
+
+.btn-kinetic:active {
+  transform: translateY(0);
+}
+
+.text-kinetic {
+  background: linear-gradient(135deg, #a8a4ff 0%, #00d2fd 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.space-label {
+  font-family: var(--font-space);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 /* Custom Scrollbars */
@@ -102,17 +128,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(113, 113, 122, 0.3);
+  background: rgba(172, 170, 177, 0.2);
   border-radius: 9999px;
 }
-.dark ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
-}
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(113, 113, 122, 0.5);
-}
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(168, 164, 255, 0.4);
 }
 
 /* Custom Stagger Delays */

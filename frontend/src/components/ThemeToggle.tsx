@@ -15,7 +15,7 @@ export const ThemeToggle: React.FC = () => {
     <div
       role="radiogroup"
       aria-label="Theme selection"
-      className="p-0.5 rounded-lg inline-flex items-center gap-0.5 bg-zinc-100 dark:bg-zinc-900/90 border border-zinc-200 dark:border-white/[0.08]"
+      className="p-0.5 rounded-xl inline-flex items-center gap-0.5 bg-[#19191f] border border-white/10"
     >
       {options.map(({ value, label, icon: Icon }) => {
         const isActive = theme === value;
@@ -26,14 +26,14 @@ export const ThemeToggle: React.FC = () => {
             aria-checked={isActive}
             onClick={() => setTheme(value)}
             title={`${label} Mode`}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-150 cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
               isActive
-                ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm border border-zinc-200/80 dark:border-white/10'
-                : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+                ? 'bg-[#25252d] text-[#00d2fd] shadow-md border border-white/10 font-space font-bold'
+                : 'text-[#acaab1] hover:text-[#f9f5fd]'
             }`}
           >
             <Icon className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden md:inline text-[11px]">{label}</span>
+            <span className="hidden md:inline text-[11px] space-label">{label}</span>
           </button>
         );
       })}

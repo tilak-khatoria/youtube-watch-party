@@ -152,21 +152,17 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
               }
             },
             onStateChange: (event: any) => {
-              // YT.PlayerState: -1 = UNSTARTED, 0 = ENDED, 1 = PLAYING, 2 = PAUSED, 3 = BUFFERING, 5 = CUED
               if (event.data === 3) {
                 setIsBuffering(true);
               } else {
                 setIsBuffering(false);
               }
 
-              // Ignore state changes triggered programmatically by socket events
               if (isProgrammaticUpdate.current) {
                 return;
               }
 
-              // Only Host and Moderator can control playback and broadcast actions
               if (!isHostOrModeratorRef.current) {
-                // Participant or Viewer: revert unauthorized state changes immediately
                 if (playState === 'paused' && event.data === 1) {
                   executeProgrammaticUpdate((p) => p.pauseVideo());
                 } else if (playState === 'playing' && event.data === 2) {
@@ -175,7 +171,6 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
                 return;
               }
 
-              // Host / Moderator: Emit event to room
               const cur = event.target.getCurrentTime() || 0;
               lastRecordedTime.current = cur;
 
@@ -216,7 +211,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
     };
   }, [executeProgrammaticUpdate]);
 
-  // 2. Programmatic Sync: Video ID change (change_video event)
+  // 2. Programmatic Sync: Video ID change
   useEffect(() => {
     if (!playerRef.current || !isPlayerReady || !videoId) return;
 
@@ -248,7 +243,6 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
       const cur = player.getCurrentTime() || 0;
       const pState = player.getPlayerState();
 
-      // Compute estimated target position accounting for network latency
       let targetTime = currentTime;
       if (playState === 'playing' && lastUpdated) {
         const elapsedSinceUpdate = (Date.now() - lastUpdated) / 1000;
@@ -257,12 +251,10 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
         }
       }
 
-      // Check for timestamp drift (> 1.8s) and seek programmatically
       if (Math.abs(cur - targetTime) > 1.8) {
         executeProgrammaticUpdate((p) => p.seekTo(targetTime, true));
       }
 
-      // Sync playState: 'playing' vs 'paused'
       if (playState === 'playing' && pState !== 1 && pState !== 3) {
         executeProgrammaticUpdate((p) => p.playVideo());
       } else if (playState === 'paused' && pState === 1) {
@@ -273,7 +265,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
     }
   }, [playState, currentTime, lastUpdated, isPlayerReady, executeProgrammaticUpdate]);
 
-  // 4. Scrubber & Time Tracking Timer (Also detects native seeks by Host/Mod)
+  // 4. Scrubber & Time Tracking Timer
   useEffect(() => {
     const timer = setInterval(() => {
       if (playerRef.current && isPlayerReady) {
@@ -281,7 +273,6 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
           const cur = playerRef.current.getCurrentTime() || 0;
           const dur = playerRef.current.getDuration() || 0;
 
-          // Detect if Host/Mod manually seeked using native YouTube timeline
           if (
             isHostOrModeratorRef.current &&
             !isProgrammaticUpdate.current &&
@@ -303,7 +294,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
     return () => clearInterval(timer);
   }, [isPlayerReady, duration, onSeek]);
 
-  // User Control Actions (Restricted strictly to Host and Moderator)
+  // User Control Actions
   const handleTogglePlay = () => {
     if (!isHostOrModerator) return;
     if (playState === 'playing') {
@@ -383,18 +374,17 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col w-full h-full bg-black rounded-2xl overflow-hidden border border-zinc-200 dark:border-white/[0.08] shadow-oled relative group"
+      className="flex flex-col w-full h-full bg-[#000000] rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative group"
     >
       {/* Video Viewport Container */}
-      <div className="relative w-full flex-1 min-h-[300px] bg-black flex items-center justify-center overflow-hidden">
-        {/* Dynamic target container for YouTube iframe: Host & Moderator have full native interaction */}
+      <div className="relative w-full flex-1 min-h-[300px] bg-[#000000] flex items-center justify-center overflow-hidden">
         <div
           ref={viewportRef}
           className="w-full h-full absolute inset-0"
           style={{ pointerEvents: isParticipantOrViewer ? 'none' : 'auto' }}
         />
 
-        {/* Transparent overlay (pointer-events: none): MUST ONLY render if role is strictly Participant or Viewer */}
+        {/* Transparent overlay: strictly for Participant or Viewer */}
         {isParticipantOrViewer && (
           <div
             id="participant-overlay"
@@ -408,27 +398,27 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
         {/* Status Overlay Badges */}
         <div className="absolute top-3.5 left-3.5 z-30 flex items-center gap-2 pointer-events-none">
           {isHost && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/80 border border-amber-500/30 text-amber-400 text-xs font-medium backdrop-blur-md">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#131319]/90 border border-amber-500/30 text-amber-400 text-xs font-space font-bold backdrop-blur-md">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Host Controller Active</span>
+              <span>HOST CONTROLLER ACTIVE</span>
             </div>
           )}
           {isModerator && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/80 border border-sky-500/30 text-sky-400 text-xs font-medium backdrop-blur-md">
-              <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-              <span>Moderator Controller Active</span>
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#131319]/90 border border-[#00D4FF]/30 text-[#00d2fd] text-xs font-space font-bold backdrop-blur-md">
+              <Sparkles className="w-3.5 h-3.5 text-[#00d2fd]" />
+              <span>MODERATOR CONTROLLER ACTIVE</span>
             </div>
           )}
           {isParticipantOrViewer && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/80 border border-white/10 text-zinc-400 text-xs font-medium backdrop-blur-md">
-              <Lock className="w-3.5 h-3.5 text-zinc-400" />
-              <span>Watch Only (Synced)</span>
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#131319]/90 border border-white/10 text-[#acaab1] text-xs font-space font-medium backdrop-blur-md">
+              <Lock className="w-3.5 h-3.5 text-[#acaab1]" />
+              <span>WATCH ONLY (SYNCED)</span>
             </div>
           )}
 
           {isBuffering && (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/80 border border-white/10 text-zinc-300 text-xs font-medium backdrop-blur-md">
-              <RefreshCw className="w-3 h-3 animate-spin" />
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#131319]/90 border border-white/10 text-[#f9f5fd] text-xs font-medium backdrop-blur-md">
+              <RefreshCw className="w-3 h-3 animate-spin text-[#00d2fd]" />
               <span>Buffering</span>
             </div>
           )}
@@ -436,10 +426,10 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
       </div>
 
       {/* Unified Synchronized Playback Control Bar */}
-      <div className="p-3 bg-white dark:bg-black border-t border-zinc-200 dark:border-white/[0.08] flex flex-col gap-2 z-30 transition-colors">
+      <div className="p-3.5 bg-[#0e0e13] border-t border-white/10 flex flex-col gap-2.5 z-30 transition-colors">
         {/* Scrubber Progress Bar */}
         <div className="flex items-center gap-3">
-          <span className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400 min-w-[38px] text-right">
+          <span className="text-[11px] font-mono text-[#acaab1] min-w-[38px] text-right">
             {formatSeconds(localTime)}
           </span>
 
@@ -452,66 +442,64 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
                 step={1}
                 value={localTime}
                 onChange={handleSeekChange}
-                className="w-full h-1 rounded-lg appearance-none cursor-pointer accent-sky-500 hover:h-1.5 bg-zinc-200 dark:bg-zinc-800 transition-all"
+                className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-[#00D4FF] hover:h-2 bg-[#19191f] transition-all"
                 title="Seek video timeline"
               />
             ) : (
-              /* Non-interactive static progress bar for Participants / Viewers */
               <div
-                className="w-full h-1 rounded-lg bg-zinc-200 dark:bg-zinc-800 overflow-hidden relative cursor-not-allowed"
+                className="w-full h-1.5 rounded-lg bg-[#19191f] overflow-hidden relative cursor-not-allowed"
                 title="Timeline scrubbing is restricted to Host and Moderators"
               >
                 <div
-                  className="h-full bg-sky-500 rounded-lg transition-all duration-300"
+                  className="h-full bg-gradient-to-r from-[#6C63FF] to-[#00D4FF] rounded-lg transition-all duration-300"
                   style={{ width: `${duration > 0 ? (localTime / duration) * 100 : 0}%` }}
                 />
               </div>
             )}
           </div>
 
-          <span className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400 min-w-[38px]">
+          <span className="text-[11px] font-mono text-[#acaab1] min-w-[38px]">
             {formatSeconds(duration)}
           </span>
         </div>
 
         {/* Buttons Bar */}
         <div className="flex items-center justify-between gap-4">
-          {/* Left Controls: Play/Pause (Host/Mod only) & Volume */}
+          {/* Left Controls */}
           <div className="flex items-center gap-3">
             {isHostOrModerator ? (
               <button
                 onClick={handleTogglePlay}
                 title={isPlaying ? 'Pause' : 'Play'}
-                className="p-2 rounded-md bg-sky-500 hover:bg-sky-400 text-black transition-colors cursor-pointer"
+                className="btn-kinetic p-2 rounded-lg flex items-center justify-center cursor-pointer"
               >
                 {isPlaying ? (
-                  <Pause className="w-3.5 h-3.5 fill-current" />
+                  <Pause className="w-4 h-4 fill-current text-black" />
                 ) : (
-                  <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                  <Play className="w-4 h-4 fill-current text-black ml-0.5" />
                 )}
               </button>
             ) : (
-              /* Informative Watch Only Badge for Participants instead of interactive play/pause */
               <div
-                className="flex items-center gap-1 px-2 py-1 rounded bg-zinc-100 dark:bg-white/[0.04] border border-zinc-200 dark:border-white/[0.08] text-zinc-500 dark:text-zinc-400 text-xs cursor-not-allowed"
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#19191f] border border-white/10 text-[#acaab1] text-xs cursor-not-allowed space-label"
                 title="Only Host/Moderators can control playback"
               >
-                <Lock className="w-3 h-3 text-zinc-400" />
-                <span className="text-[11px]">Watch Only</span>
+                <Lock className="w-3.5 h-3.5 text-[#acaab1]" />
+                <span className="text-[10px]">WATCH ONLY</span>
               </div>
             )}
 
-            {/* Volume Control (Available to everyone for local sound) */}
+            {/* Volume Control */}
             <div className="flex items-center gap-2">
               <button
                 onClick={handleToggleMute}
-                className="p-1 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
+                className="p-1 text-[#acaab1] hover:text-[#f9f5fd] transition-colors cursor-pointer"
                 title={isMuted ? 'Unmute' : 'Mute'}
               >
                 {isMuted || volume === 0 ? (
-                  <VolumeX className="w-3.5 h-3.5 text-rose-500" />
+                  <VolumeX className="w-4 h-4 text-rose-400" />
                 ) : (
-                  <Volume2 className="w-3.5 h-3.5" />
+                  <Volume2 className="w-4 h-4" />
                 )}
               </button>
               <input
@@ -520,42 +508,39 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
                 max={100}
                 value={isMuted ? 0 : volume}
                 onChange={handleVolumeChange}
-                className="w-16 h-1 bg-zinc-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                className="w-16 h-1 bg-[#19191f] rounded-lg appearance-none cursor-pointer accent-[#00D4FF]"
               />
             </div>
           </div>
 
-          {/* Right Controls: Resync, Change Video (Host/Mod only), Fullscreen */}
+          {/* Right Controls */}
           <div className="flex items-center gap-2">
-            {/* Resync Button (Available to all users if they drift or buffer) */}
             <button
               onClick={handleManualResync}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-zinc-100 dark:bg-white/[0.04] hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-white/[0.08] transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-space font-semibold bg-[#19191f] hover:bg-[#25252d] text-[#f9f5fd] border border-white/10 transition-all cursor-pointer"
               title="Force Resynchronization with Room"
             >
-              <RotateCcw className="w-3 h-3 text-sky-500" />
-              <span className="hidden sm:inline text-[11px]">Resync</span>
+              <RotateCcw className="w-3.5 h-3.5 text-[#00d2fd]" />
+              <span className="hidden sm:inline text-[11px]">RESYNC</span>
             </button>
 
-            {/* Change Video Button (Strictly Host/Mod only) */}
             {isHostOrModerator && (
               <button
                 onClick={onChangeVideoClick}
                 title="Change Video for Room"
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-zinc-100 dark:bg-white/[0.04] hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-white/[0.08] transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-space font-semibold bg-[#19191f] hover:bg-[#25252d] text-[#f9f5fd] border border-white/10 transition-all cursor-pointer"
               >
-                <Tv className="w-3 h-3 text-sky-500" />
-                <span className="text-[11px]">Change Video</span>
+                <Tv className="w-3.5 h-3.5 text-[#a8a4ff]" />
+                <span className="text-[11px]">CHANGE VIDEO</span>
               </button>
             )}
 
-            {/* Fullscreen Button */}
             <button
               onClick={handleFullscreen}
-              className="p-1 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/10 rounded-md transition-colors cursor-pointer"
+              className="p-1.5 text-[#acaab1] hover:text-[#f9f5fd] hover:bg-[#19191f] rounded-lg transition-colors cursor-pointer"
               title="Fullscreen"
             >
-              <Maximize2 className="w-3.5 h-3.5" />
+              <Maximize2 className="w-4 h-4" />
             </button>
           </div>
         </div>
