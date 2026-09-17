@@ -44,9 +44,9 @@ export const LiveChat: React.FC<LiveChatProps> = ({
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {(messages || []).length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-6 text-text-muted">
-            <Smile className="w-7 h-7 text-text-muted mb-2" />
-            <p className="text-xs font-medium text-text-primary">No messages yet</p>
-            <p className="text-[11px] text-text-muted mt-0.5">
+            <Smile className="w-8 h-8 text-text-muted mb-2.5 opacity-60" />
+            <p className="text-xs font-semibold text-text-primary">No messages yet</p>
+            <p className="text-[11px] text-text-muted mt-1">
               Say hello or react with an emoji!
             </p>
           </div>
@@ -64,22 +64,22 @@ export const LiveChat: React.FC<LiveChatProps> = ({
               >
                 {/* Header info */}
                 <div className="flex items-center gap-1.5 mb-1 px-1">
-                  <span className="text-[11px] font-medium text-on-surface">
+                  <span className="text-[11px] font-semibold text-text-primary">
                     {senderName}
                   </span>
 
                   {isHost && (
-                    <span className="flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.2 rounded bg-tertiary/10 text-tertiary border border-tertiary/20">
+                    <span className="flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-tertiary/10 text-tertiary border border-tertiary/25">
                       <Crown className="w-2.5 h-2.5 text-tertiary" /> Host
                     </span>
                   )}
                   {isMod && (
-                    <span className="flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.2 rounded bg-primary/10 text-primary border border-primary/20">
+                    <span className="flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/25">
                       <ShieldCheck className="w-2.5 h-2.5 text-primary" /> Mod
                     </span>
                   )}
                   {!isHost && !isMod && (
-                    <span className="flex items-center gap-0.5 text-[9px] text-text-muted px-1 py-0.2 rounded bg-white/[0.04]">
+                    <span className="flex items-center gap-0.5 text-[9px] text-text-muted px-1.5 py-0.2 rounded-full bg-neutral-100 dark:bg-white/[0.04]">
                       <User className="w-2.5 h-2.5 text-text-muted" /> Viewer
                     </span>
                   )}
@@ -91,10 +91,10 @@ export const LiveChat: React.FC<LiveChatProps> = ({
 
                 {/* Message Bubble */}
                 <div
-                  className={`px-3 py-1.5 rounded-xl text-xs max-w-[85%] break-words shadow-sm ${
+                  className={`px-3.5 py-2 rounded-2xl text-xs max-w-[85%] break-words shadow-sm ${
                     isSelf
-                      ? 'bg-primary-container text-pure-black font-medium rounded-tr-none'
-                      : 'bg-white/[0.05] text-on-surface border border-border-subtle rounded-tl-none'
+                      ? 'bg-primary-container text-pure-black font-semibold rounded-tr-xs'
+                      : 'bg-neutral-100 dark:bg-white/[0.05] text-text-primary border border-neutral-200 dark:border-border-subtle rounded-tl-xs'
                   }`}
                 >
                   {msg?.message || ''}
@@ -107,15 +107,15 @@ export const LiveChat: React.FC<LiveChatProps> = ({
       </div>
 
       {/* Quick Reaction Bar */}
-      <div className="px-3 py-1 border-t border-border-subtle flex items-center gap-1.5 overflow-x-auto bg-black/40">
-        <span className="text-[10px] font-medium text-text-muted uppercase shrink-0">
+      <div className="px-3 py-1.5 border-t border-neutral-200 dark:border-border-subtle flex items-center gap-1.5 overflow-x-auto bg-neutral-50/80 dark:bg-black/40 backdrop-blur-sm">
+        <span className="text-[10px] font-semibold text-text-muted uppercase shrink-0">
           React:
         </span>
         {QUICK_EMOJIS.map((emoji) => (
           <button
             key={emoji}
             onClick={() => handleSendEmoji(emoji)}
-            className="hover:scale-110 transition-transform text-sm px-1 py-0.5 rounded hover:bg-white/10 cursor-pointer"
+            className="hover:scale-125 transition-transform text-sm px-1.5 py-0.5 rounded-lg hover:bg-neutral-200 dark:hover:bg-white/10 cursor-pointer"
           >
             {emoji}
           </button>
@@ -125,21 +125,21 @@ export const LiveChat: React.FC<LiveChatProps> = ({
       {/* Input Form */}
       <form
         onSubmit={handleSubmit}
-        className="p-2.5 border-t border-border-subtle bg-black/60 flex items-center gap-2"
+        className="p-3 border-t border-neutral-200 dark:border-border-subtle bg-white dark:bg-black/60 flex items-center gap-2 backdrop-blur-md"
       >
         <input
           type="text"
           placeholder="Send a chat message..."
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          className="flex-1 glass-input rounded-lg px-3 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
+          className="flex-1 glass-input rounded-xl px-3.5 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
         />
         <button
           type="submit"
           disabled={!inputText.trim()}
-          className="p-1.5 rounded-lg bg-primary-container hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed text-pure-black transition-colors shrink-0 cursor-pointer"
+          className="p-2 rounded-xl bg-primary-container hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed text-pure-black transition-all shrink-0 cursor-pointer shadow-sm hover:scale-105 active:scale-95"
         >
-          <Send className="w-3.5 h-3.5" />
+          <Send className="w-4 h-4" />
         </button>
       </form>
     </div>
