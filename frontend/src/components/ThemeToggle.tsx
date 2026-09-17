@@ -15,7 +15,7 @@ export const ThemeToggle: React.FC = () => {
     <div
       role="radiogroup"
       aria-label="Theme selection"
-      className="glass-base p-1 rounded-full inline-flex items-center gap-0.5 border border-slate-300/60 dark:border-white/10 shadow-inner"
+      className="p-0.5 rounded-lg inline-flex items-center gap-0.5 bg-zinc-100 dark:bg-zinc-900/90 border border-zinc-200 dark:border-white/[0.08]"
     >
       {options.map(({ value, label, icon: Icon }) => {
         const isActive = theme === value;
@@ -26,18 +26,14 @@ export const ThemeToggle: React.FC = () => {
             aria-checked={isActive}
             onClick={() => setTheme(value)}
             title={`${label} Mode`}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-150 cursor-pointer ${
               isActive
-                ? value === 'light'
-                  ? 'bg-white text-amber-600 shadow-sm ring-1 ring-amber-500/20'
-                  : value === 'dark'
-                  ? 'bg-slate-800 text-indigo-400 shadow-sm ring-1 ring-indigo-500/30'
-                  : 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-indigo-500/20'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm border border-zinc-200/80 dark:border-white/10'
+                : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
             }`}
           >
             <Icon className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden md:inline text-[11px] font-medium tracking-tight">{label}</span>
+            <span className="hidden md:inline text-[11px]">{label}</span>
           </button>
         );
       })}

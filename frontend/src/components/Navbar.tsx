@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Tv, Copy, Check, LogOut, ShieldCheck, Crown, User, Sparkles } from 'lucide-react';
+import { Tv, Copy, Check, LogOut, ShieldCheck, Crown, User } from 'lucide-react';
 import type { ParticipantRole } from '../types';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -37,22 +37,16 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full glass-elevated border-b border-slate-200/80 dark:border-white/10 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 sm:gap-4">
+    <header className="sticky top-0 z-50 w-full bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-zinc-200 dark:border-white/[0.08] transition-colors">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group shrink-0">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-rose-600 via-purple-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-rose-600/20 group-hover:scale-105 transition-transform">
-            <Tv className="w-5 h-5 text-white" />
+          <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-white/[0.06] border border-zinc-200 dark:border-white/[0.08] flex items-center justify-center transition-colors">
+            <Tv className="w-4 h-4 text-sky-500" />
           </div>
-          <div className="flex flex-col">
-            <span className="font-extrabold text-base sm:text-lg tracking-tight bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-800 dark:from-white dark:via-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-              SyncParty
-            </span>
-            <span className="text-[9px] uppercase font-bold tracking-widest text-rose-600 dark:text-rose-400 -mt-1 flex items-center gap-0.5">
-              <span>Watch Party</span>
-              <Sparkles className="w-2.5 h-2.5" />
-            </span>
-          </div>
+          <span className="font-bold text-sm sm:text-base tracking-tight text-zinc-900 dark:text-white">
+            SyncParty
+          </span>
         </Link>
 
         {/* Room Header Controls / Home Header Controls */}
@@ -60,18 +54,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           {roomId ? (
             <>
               {/* Room Code with Copy Link */}
-              <div className="hidden sm:flex items-center gap-1.5 glass-base rounded-full px-3 py-1 shadow-sm border border-slate-300/60 dark:border-white/10">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Room:</span>
-                <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-300 tracking-wider">
+              <div className="hidden sm:flex items-center gap-1.5 bg-zinc-100 dark:bg-white/[0.04] rounded-md px-2.5 py-1 border border-zinc-200 dark:border-white/[0.08]">
+                <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">Room:</span>
+                <span className="text-xs font-mono font-medium text-sky-600 dark:text-sky-400 tracking-wider">
                   {roomId}
                 </span>
                 <button
                   onClick={handleCopyLink}
-                  className="ml-1 p-1 hover:bg-slate-200/60 dark:hover:bg-white/10 rounded-full text-slate-500 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer"
+                  className="ml-1 p-0.5 hover:bg-zinc-200 dark:hover:bg-white/10 rounded text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-all cursor-pointer"
                   title="Copy Invite Link"
                 >
                   {copied ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+                    <Check className="w-3.5 h-3.5 text-emerald-500" />
                   ) : (
                     <Copy className="w-3.5 h-3.5" />
                   )}
@@ -80,23 +74,23 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Current User Role Pill */}
               {username && role && (
-                <div className="flex items-center gap-1.5 glass-base rounded-full px-2.5 py-1 shadow-sm border border-slate-300/60 dark:border-white/10">
+                <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-white/[0.04] rounded-md px-2 py-1 border border-zinc-200 dark:border-white/[0.08]">
                   {role === 'Host' && (
-                    <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                      <Crown className="w-3 h-3 text-amber-500 dark:text-amber-400" /> Host
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-500">
+                      <Crown className="w-3 h-3 text-amber-500" /> Host
                     </span>
                   )}
                   {role === 'Moderator' && (
-                    <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30">
-                      <ShieldCheck className="w-3 h-3 text-cyan-500 dark:text-cyan-400" /> Mod
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-sky-400">
+                      <ShieldCheck className="w-3 h-3 text-sky-400" /> Mod
                     </span>
                   )}
                   {(role === 'Participant' || role === 'Viewer') && (
-                    <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
-                      <User className="w-3 h-3 text-slate-500 dark:text-slate-400" /> Viewer
+                    <span className="flex items-center gap-1 text-[11px] font-medium text-zinc-400">
+                      <User className="w-3 h-3 text-zinc-400" /> Viewer
                     </span>
                   )}
-                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 max-w-[90px] truncate hidden md:inline">
+                  <span className="text-xs text-zinc-700 dark:text-zinc-300 max-w-[90px] truncate hidden md:inline font-mono">
                     {username}
                   </span>
                 </div>
@@ -105,19 +99,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Leave Room Button */}
               <button
                 onClick={handleLeave}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/25 transition-all hover:scale-105 active:scale-95 shadow-sm cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Leave</span>
               </button>
             </>
           ) : (
-            <div className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full glass-base text-xs font-medium text-emerald-700 dark:text-emerald-400 border border-emerald-500/25 shadow-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span className="font-semibold tracking-tight">Live Sync Engine Ready</span>
+            <div className="hidden sm:inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-white/[0.04] border border-zinc-200 dark:border-white/[0.08] text-xs font-normal text-zinc-600 dark:text-zinc-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+              <span className="text-[11px] tracking-tight">Live Sync Engine Ready</span>
             </div>
           )}
 

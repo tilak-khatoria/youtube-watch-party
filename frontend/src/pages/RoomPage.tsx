@@ -443,35 +443,25 @@ export const RoomPage: React.FC = () => {
   // DO NOT render video player or connect to socket in this state.
   if (isDirectLinkFallback) {
     return (
-      <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 transition-colors relative overflow-hidden">
-        {/* Ambient Blurred Gradient Background */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-          <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-purple-600/20 via-indigo-600/15 to-transparent blur-[120px] dark:from-purple-600/25 dark:via-indigo-600/20 animate-float-slow" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tl from-rose-500/20 via-purple-600/15 to-transparent blur-[120px] dark:from-rose-500/25 dark:via-purple-600/20 animate-float-reverse" />
-          <div className="absolute top-[30%] right-[25%] w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-indigo-500/15 via-pink-500/10 to-transparent blur-[100px] dark:from-indigo-500/20 dark:via-pink-500/15" />
-        </div>
-
+      <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 transition-colors">
         <Navbar />
         <div className="flex-1 flex items-center justify-center p-4">
-          <div className="glass-elevated rounded-3xl p-8 max-w-md w-full relative overflow-hidden animate-fade-in-up">
-            <div className="absolute -top-16 -right-16 w-36 h-36 bg-rose-600/20 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="flex items-center gap-3 mb-6 relative z-10">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-600 via-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-rose-600/25">
-                <Tv className="w-6 h-6" />
+          <div className="glass-elevated rounded-2xl p-6 sm:p-8 max-w-md w-full border border-zinc-200 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.03] animate-fade-in-up">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-9 h-9 rounded-lg bg-zinc-100 dark:bg-white/[0.06] border border-zinc-200 dark:border-white/[0.08] flex items-center justify-center text-sky-500">
+                <Tv className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Join Watch Party</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Room: <code className="font-mono text-indigo-600 dark:text-indigo-400 font-semibold">{canonicalRoomId}</code>
+                <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Join Watch Party</h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Room: <code className="font-mono text-sky-600 dark:text-sky-400 font-medium">{canonicalRoomId}</code>
                 </p>
               </div>
             </div>
 
-            <form onSubmit={handleDirectJoinSubmit} className="space-y-4 relative z-10">
+            <form onSubmit={handleDirectJoinSubmit} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                   Enter Your Display Name <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -483,18 +473,18 @@ export const RoomPage: React.FC = () => {
                     setDirectNameInput(e.target.value);
                     setDirectNameError('');
                   }}
-                  className="glass-input w-full rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none transition-all"
+                  className="glass-input w-full rounded-lg px-3.5 py-2.5 text-xs text-zinc-900 dark:text-white placeholder-zinc-500 focus:outline-none"
                 />
                 {directNameError && (
-                  <p className="text-xs text-rose-500 mt-1.5 font-medium">{directNameError}</p>
+                  <p className="text-xs text-rose-500 mt-1 font-medium">{directNameError}</p>
                 )}
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-rose-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-lg bg-sky-500 hover:bg-sky-400 active:scale-[0.98] text-black font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:scale-[1.01]"
               >
-                <LogIn className="w-4 h-4" />
+                <LogIn className="w-3.5 h-3.5" />
                 <span>Join</span>
               </button>
             </form>
@@ -506,14 +496,7 @@ export const RoomPage: React.FC = () => {
 
   return (
     <ErrorBoundary fallbackTitle="Watch Room Encountered an Issue">
-      <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 transition-colors relative overflow-hidden">
-        {/* Ambient Blurred Gradient Background */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-          <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-purple-600/20 via-indigo-600/15 to-transparent blur-[140px] dark:from-purple-600/25 dark:via-indigo-600/20 animate-float-slow" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-tl from-rose-500/20 via-purple-600/15 to-transparent blur-[140px] dark:from-rose-500/25 dark:via-purple-600/20 animate-float-reverse" />
-          <div className="absolute top-[35%] right-[20%] w-[450px] h-[450px] rounded-full bg-gradient-to-tr from-indigo-500/15 via-pink-500/10 to-transparent blur-[120px] dark:from-indigo-500/20 dark:via-pink-500/15" />
-        </div>
-
+      <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 transition-colors">
         <Navbar
           roomId={canonicalRoomId}
           username={username}
@@ -522,28 +505,28 @@ export const RoomPage: React.FC = () => {
         />
 
         {/* Main Party Room Workspace */}
-        <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-5 lg:p-6 flex flex-col lg:flex-row gap-5">
+        <main className="flex-1 max-w-[1500px] w-full mx-auto p-3 sm:p-4 lg:p-6 flex flex-col lg:flex-row gap-4 sm:gap-5">
           {/* Left / Center: YouTube Video Player Area */}
           <section className="flex-1 flex flex-col min-w-0">
             {/* Top Banner with Room info & Copy Share */}
             <div className="flex flex-wrap items-center justify-between gap-3 mb-3 px-1">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Current Room:</span>
-                <span className="glass-base text-xs font-mono font-bold text-slate-900 dark:text-white px-2.5 py-1 rounded-lg">
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">Current Room:</span>
+                <span className="text-xs font-mono font-medium text-zinc-900 dark:text-white bg-zinc-100 dark:bg-white/[0.04] border border-zinc-200 dark:border-white/[0.08] px-2 py-0.5 rounded">
                   {canonicalRoomId}
                 </span>
                 <button
                   onClick={handleCopyInviteLink}
-                  className="glass-base flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-all hover:scale-105 shadow-sm cursor-pointer"
+                  className="flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-medium bg-zinc-100 dark:bg-white/[0.04] hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-white/[0.08] transition-colors cursor-pointer"
                 >
                   {isCopied ? (
                     <>
-                      <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+                      <Check className="w-3 h-3 text-emerald-500" />
                       <span>Copied!</span>
                     </>
                   ) : (
                     <>
-                      <Share2 className="w-3.5 h-3.5" />
+                      <Share2 className="w-3 h-3" />
                       <span>Share Link</span>
                     </>
                   )}
@@ -553,18 +536,18 @@ export const RoomPage: React.FC = () => {
               {/* Role Notice Indicator */}
               <div className="flex items-center gap-2">
                 {isHost && (
-                  <span className="flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/30 backdrop-blur-md px-3 py-1 rounded-full shadow-sm">
-                    <Crown className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> You are the Host
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded">
+                    <Crown className="w-3 h-3 text-amber-500" /> You are the Host
                   </span>
                 )}
                 {isModerator && (
-                  <span className="flex items-center gap-1.5 text-xs font-bold text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 backdrop-blur-md px-3 py-1 rounded-full shadow-sm">
-                    <Shield className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" /> Moderator Controls Enabled
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2.5 py-0.5 rounded">
+                    <Shield className="w-3 h-3 text-sky-400" /> Moderator Controls Enabled
                   </span>
                 )}
                 {isParticipantOrViewer && (
-                  <span className="glass-base flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 px-3 py-1 rounded-full shadow-sm">
-                    <Eye className="w-3.5 h-3.5 text-slate-500" /> Watch Only Mode (Controls Locked)
+                  <span className="flex items-center gap-1.5 text-xs font-normal text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-white/[0.03] border border-zinc-200 dark:border-white/[0.08] px-2.5 py-0.5 rounded">
+                    <Eye className="w-3 h-3 text-zinc-500" /> Watch Only Mode
                   </span>
                 )}
               </div>
@@ -574,7 +557,7 @@ export const RoomPage: React.FC = () => {
             {isHostOrModerator ? (
               <form
                 onSubmit={handleInlineUrlSubmit}
-                className="mb-3 p-2 rounded-2xl glass-elevated flex items-center gap-2 shadow-sm"
+                className="mb-3 p-1.5 rounded-xl border border-zinc-200 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.03] flex items-center gap-2 shadow-sm"
               >
                 <div className="relative flex-1">
                   <input
@@ -582,15 +565,15 @@ export const RoomPage: React.FC = () => {
                     placeholder="Paste YouTube URL or Video ID to change video for everyone..."
                     value={inlineVideoUrl}
                     onChange={(e) => setInlineVideoUrl(e.target.value)}
-                    className="glass-input w-full rounded-xl px-4 py-2 pl-9 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none transition-all font-mono"
+                    className="glass-input w-full rounded-lg px-3 py-1.5 pl-8 text-xs font-mono text-zinc-900 dark:text-white placeholder-zinc-500 focus:outline-none"
                   />
-                  <PlaySquare className="w-4 h-4 text-rose-500 absolute left-3 top-2.5" />
+                  <PlaySquare className="w-3.5 h-3.5 text-sky-500 absolute left-2.5 top-2.5" />
                 </div>
 
                 <button
                   type="submit"
                   disabled={!inlineVideoUrl.trim()}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold shadow-md shadow-rose-600/20 transition-all hover:scale-105 shrink-0 flex items-center gap-1.5 cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 disabled:opacity-40 disabled:cursor-not-allowed text-black text-xs font-semibold transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>Change Video</span>
                 </button>
@@ -598,27 +581,27 @@ export const RoomPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsVideoModalOpen(true)}
-                  className="glass-base px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all hover:scale-105 shrink-0 flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-lg bg-zinc-100 dark:bg-white/[0.06] hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-white/[0.08] text-xs font-medium transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
                   title="Browse video presets"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                  <Sparkles className="w-3 h-3 text-amber-500" />
                   <span className="hidden sm:inline">Presets</span>
                 </button>
               </form>
             ) : (
               /* Informative status bar for Participants / Viewers */
-              <div className="mb-3 px-4 py-2.5 rounded-2xl glass-base flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 shadow-sm">
+              <div className="mb-3 px-3 py-2 rounded-xl bg-zinc-100 dark:bg-white/[0.03] border border-zinc-200 dark:border-white/[0.08] flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-400">
                 <div className="flex items-center gap-2">
-                  <Radio className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
+                  <Radio className="w-3 h-3 text-sky-500" />
                   <span>
                     Watching live with party • Video ID:{' '}
-                    <code className="text-indigo-600 dark:text-indigo-300 font-mono font-semibold">
+                    <code className="text-sky-600 dark:text-sky-400 font-mono font-medium">
                       {videoState?.videoId || 'dQw4w9WgXcQ'}
                     </code>
                   </span>
                 </div>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                  Watch Only • Controls managed by Host & Mods
+                <span className="text-[11px] text-zinc-500 font-normal">
+                  Watch Only • Managed by Host & Mods
                 </span>
               </div>
             )}
@@ -641,30 +624,30 @@ export const RoomPage: React.FC = () => {
           </section>
 
           {/* Right Sidebar: Participants & Live Chat */}
-          <aside className="w-full lg:w-96 flex flex-col glass-elevated rounded-2xl overflow-hidden shadow-xl dark:shadow-2xl h-[580px] lg:h-auto shrink-0">
+          <aside className="w-full lg:w-88 xl:w-96 flex flex-col rounded-2xl border border-zinc-200 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.03] overflow-hidden shadow-lg h-[580px] lg:h-auto shrink-0">
             {/* Sidebar Tab Header */}
-            <div className="flex items-center border-b border-white/10 dark:border-white/10 bg-slate-100/50 dark:bg-white/[0.02]">
+            <div className="flex items-center border-b border-zinc-200 dark:border-white/[0.08] bg-zinc-50 dark:bg-black/60">
               <button
                 onClick={() => setActiveTab('participants')}
-                className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-xs font-bold transition-all border-b-2 cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-medium transition-colors border-b-2 cursor-pointer ${
                   activeTab === 'participants'
-                    ? 'border-indigo-600 dark:border-indigo-500 text-slate-900 dark:text-white bg-white/40 dark:bg-white/10'
-                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/20 dark:hover:bg-white/5'
+                    ? 'border-sky-500 text-zinc-900 dark:text-white bg-white dark:bg-white/[0.03]'
+                    : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/50 dark:hover:bg-white/[0.02]'
                 }`}
               >
-                <Users className="w-4 h-4" />
+                <Users className="w-3.5 h-3.5" />
                 <span>Participants ({(participants || []).length})</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('chat')}
-                className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-xs font-bold transition-all border-b-2 cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-medium transition-colors border-b-2 cursor-pointer ${
                   activeTab === 'chat'
-                    ? 'border-indigo-600 dark:border-indigo-500 text-slate-900 dark:text-white bg-white/40 dark:bg-white/10'
-                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/20 dark:hover:bg-white/5'
+                    ? 'border-sky-500 text-zinc-900 dark:text-white bg-white dark:bg-white/[0.03]'
+                    : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100/50 dark:hover:bg-white/[0.02]'
                 }`}
               >
-                <MessageSquare className="w-4 h-4" />
+                <MessageSquare className="w-3.5 h-3.5" />
                 <span>Live Chat ({(chatMessages || []).length})</span>
               </button>
             </div>
