@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { getSocket } from '../services/socket';
 import type {
@@ -9,7 +9,7 @@ import type {
   ChatMessage,
   NotificationToast,
 } from '../types';
-import { extractYouTubeVideoId } from '../utils/youtube';
+import { extractYouTubeVideoId, normalizeRoomId } from '../utils/youtube';
 import { Navbar } from '../components/Navbar';
 import { YouTubePlayer } from '../components/YouTubePlayer';
 import { ParticipantList } from '../components/ParticipantList';
@@ -24,25 +24,45 @@ import {
   Crown,
   Shield,
   Eye,
-  AlertTriangle,
   PlaySquare,
   Sparkles,
+  LogIn,
+  Tv,
+  Radio,
 } from 'lucide-react';
 
 export const RoomPage: React.FC = () => {
-  const { roomId } = useParams<{ roomId: string }>();
+  const { roomId: rawRoomId } = useParams<{ roomId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Canonical Room ID (handles '13m4x1' and 'party-13m4x1' identically)
+  const canonicalRoomId = useMemo(() => normalizeRoomId(rawRoomId), [rawRoomId]);
+
+  // Keep browser URL canonical if prefix was omitted
+  useEffect(() => {
+    if (rawRoomId && rawRoomId !== canonicalRoomId) {
+      navigate(`/room/${canonicalRoomId}`, { replace: true, state: location.state });
+    }
+  }, [rawRoomId, canonicalRoomId, navigate, location.state]);
 
   // Route State passed from Home
   const stateUsername = location.state?.username;
   const initialVideoId = location.state?.initialVideoId;
 
-  // Local User State
+  // Stored username check for Direct Link / Refresh
+  const storedUsername = useMemo(() => {
+    return stateUsername || localStorage.getItem('syncparty_username') || '';
+  }, [stateUsername]);
+
+  // Prompt state for fallback username modal
+  const [username, setUsername] = useState<string>(storedUsername);
+  const [isNamePromptOpen, setIsNamePromptOpen] = useState<boolean>(!storedUsername);
+  const [nameInput, setNameInput] = useState<string>('');
+  const [nameError, setNameError] = useState<string>('');
+
+  // Local User & Role State
   const [currentUserId, setCurrentUserId] = useState<string>('');
-  const [username] = useState<string>(
-    stateUsername || localStorage.getItem('syncparty_username') || `User_${Math.floor(1000 + Math.random() * 9000)}`
-  );
   const [currentUserRole, setCurrentUserRole] = useState<ParticipantRole>('Participant');
 
   // Room & Video State
@@ -84,10 +104,9 @@ export const RoomPage: React.FC = () => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  // Socket Connection and Event Listeners
+  // Socket Connection and Event Listeners (Activated once username is available)
   useEffect(() => {
-    if (!roomId) {
-      navigate('/');
+    if (!canonicalRoomId || isNamePromptOpen || !username) {
       return;
     }
 
@@ -98,9 +117,9 @@ export const RoomPage: React.FC = () => {
       console.log('[Socket Connected]:', socket.id);
       setCurrentUserId(socket.id || '');
 
-      // Join the room
+      // Join the canonical room
       socket.emit('join_room', {
-        roomId,
+        roomId: canonicalRoomId,
         username,
       });
     });
@@ -109,7 +128,7 @@ export const RoomPage: React.FC = () => {
     if (socket.connected) {
       setCurrentUserId(socket.id || '');
       socket.emit('join_room', {
-        roomId,
+        roomId: canonicalRoomId,
         username,
       });
     }
@@ -265,28 +284,43 @@ export const RoomPage: React.FC = () => {
       socket.off('error_message');
       socket.off('receive_message');
     };
-  }, [roomId, username, navigate, addToast]);
+  }, [canonicalRoomId, username, isNamePromptOpen, navigate, addToast]);
 
   // RBAC Permission Check: Can current user control playback / change video?
+  // Strictly restricted to Host and Moderator
   const canControl = currentUserRole === 'Host' || currentUserRole === 'Moderator';
 
-  // Sockets Emitters
+  // Handle Display Name Form Submission (Fallback for direct links / refreshes)
+  const handleNamePromptSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = nameInput.trim();
+    if (!trimmed) {
+      setNameError('Please enter a display name to join the party.');
+      return;
+    }
+
+    localStorage.setItem('syncparty_username', trimmed);
+    setUsername(trimmed);
+    setIsNamePromptOpen(false);
+  };
+
+  // Sockets Emitters (Strictly gated by canControl)
   const handlePlay = (time: number) => {
     if (!canControl) return;
     const socket = getSocket();
-    socket.emit('play', { roomId, currentTime: time });
+    socket.emit('play', { roomId: canonicalRoomId, currentTime: time });
   };
 
   const handlePause = (time: number) => {
     if (!canControl) return;
     const socket = getSocket();
-    socket.emit('pause', { roomId, currentTime: time });
+    socket.emit('pause', { roomId: canonicalRoomId, currentTime: time });
   };
 
   const handleSeek = (time: number) => {
     if (!canControl) return;
     const socket = getSocket();
-    socket.emit('seek', { roomId, currentTime: time });
+    socket.emit('seek', { roomId: canonicalRoomId, currentTime: time });
   };
 
   const handleChangeVideo = (newVideoId: string) => {
@@ -295,12 +329,12 @@ export const RoomPage: React.FC = () => {
       return;
     }
     const socket = getSocket();
-    socket.emit('change_video', { roomId, videoId: newVideoId });
+    socket.emit('change_video', { roomId: canonicalRoomId, videoId: newVideoId });
   };
 
   const handleInlineUrlSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inlineVideoUrl.trim()) return;
+    if (!canControl || !inlineVideoUrl.trim()) return;
 
     const extractedId = extractYouTubeVideoId(inlineVideoUrl);
     if (!extractedId) {
@@ -314,37 +348,92 @@ export const RoomPage: React.FC = () => {
 
   const handleAssignRole = (userId: string, role: ParticipantRole) => {
     const socket = getSocket();
-    socket.emit('assign_role', { roomId, userId, role });
+    socket.emit('assign_role', { roomId: canonicalRoomId, userId, role });
   };
 
   const handleRemoveParticipant = (userId: string) => {
     const socket = getSocket();
-    socket.emit('remove_participant', { roomId, userId });
+    socket.emit('remove_participant', { roomId: canonicalRoomId, userId });
   };
 
   const handleSendMessage = (message: string) => {
     const socket = getSocket();
-    socket.emit('send_message', { roomId, message });
+    socket.emit('send_message', { roomId: canonicalRoomId, message });
   };
 
   const handleLeaveRoom = () => {
     const socket = getSocket();
-    socket.emit('leave_room', { roomId });
+    socket.emit('leave_room', { roomId: canonicalRoomId });
     navigate('/');
   };
 
   const handleCopyInviteLink = () => {
-    const url = window.location.href;
+    const url = `${window.location.origin}/room/${canonicalRoomId}`;
     navigator.clipboard.writeText(url);
     setIsCopied(true);
     addToast('success', 'Invite link copied to clipboard!');
     setTimeout(() => setIsCopied(false), 2000);
   };
 
+  // Fallback Modal for Direct Link Joins / Refreshes without name
+  if (isNamePromptOpen) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[#090a10] text-slate-100">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="glass-panel p-8 rounded-3xl border border-white/10 max-w-md w-full shadow-2xl relative overflow-hidden animate-slide-in">
+            <div className="absolute -top-16 -right-16 w-36 h-36 bg-rose-600/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="flex items-center gap-3 mb-6 relative z-10">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-rose-600/30">
+                <Tv className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Join Watch Party</h2>
+                <p className="text-xs text-slate-400">
+                  Room: <code className="font-mono text-indigo-300 font-semibold">{canonicalRoomId}</code>
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleNamePromptSubmit} className="space-y-4 relative z-10">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-2">
+                  Enter Your Display Name
+                </label>
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="e.g. Alex, Sam, Taylor..."
+                  value={nameInput}
+                  onChange={(e) => {
+                    setNameInput(e.target.value);
+                    setNameError('');
+                  }}
+                  className="w-full bg-slate-900/90 border border-white/10 focus:border-rose-500 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-500/25 transition-all"
+                />
+                {nameError && <p className="text-xs text-rose-400 mt-1.5 font-medium">{nameError}</p>}
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-rose-600/30 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Join Watch Party</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[#08090f] text-slate-100">
       <Navbar
-        roomId={roomId}
+        roomId={canonicalRoomId}
         username={username}
         role={currentUserRole}
         onLeaveRoom={handleLeaveRoom}
@@ -359,7 +448,7 @@ export const RoomPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-slate-400">Current Room:</span>
               <span className="text-xs font-mono font-bold text-white bg-slate-900 border border-white/10 px-2.5 py-1 rounded-lg">
-                {roomId}
+                {canonicalRoomId}
               </span>
               <button
                 onClick={handleCopyInviteLink}
@@ -393,22 +482,22 @@ export const RoomPage: React.FC = () => {
               )}
               {(currentUserRole === 'Participant' || currentUserRole === 'Viewer') && (
                 <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400 bg-slate-900 border border-white/10 px-3 py-1 rounded-full">
-                  <Eye className="w-3.5 h-3.5 text-slate-500" /> Viewer Mode (Controls Locked)
+                  <Eye className="w-3.5 h-3.5 text-slate-500" /> Watch Only Mode (Controls Locked)
                 </span>
               )}
             </div>
           </div>
 
-          {/* YouTube Video URL Input Field for Host / Moderator */}
+          {/* YouTube Video URL Input Field: Strictly rendered for Host / Moderator */}
           {canControl ? (
             <form
               onSubmit={handleInlineUrlSubmit}
-              className="mb-3 p-2 rounded-2xl glass-panel border border-white/10 flex items-center gap-2"
+              className="mb-3 p-2 rounded-2xl glass-panel border border-white/10 flex items-center gap-2 shadow-sm"
             >
               <div className="relative flex-1">
                 <input
                   type="text"
-                  placeholder="Paste new YouTube URL or Video ID to change video..."
+                  placeholder="Paste YouTube URL or Video ID to change video for everyone..."
                   value={inlineVideoUrl}
                   onChange={(e) => setInlineVideoUrl(e.target.value)}
                   className="w-full bg-slate-950/90 border border-white/10 rounded-xl px-4 py-2 pl-9 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 transition-all font-mono"
@@ -435,12 +524,13 @@ export const RoomPage: React.FC = () => {
               </button>
             </form>
           ) : (
-            <div className="mb-3 px-3 py-1.5 rounded-xl bg-slate-900/50 border border-white/5 flex items-center justify-between text-xs text-slate-400">
+            /* Informative status bar for Participants / Viewers */
+            <div className="mb-3 px-4 py-2.5 rounded-2xl glass-panel border border-white/5 flex items-center justify-between text-xs text-slate-300 shadow-sm">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Now Playing: <code className="text-indigo-300 font-mono">{videoState.videoId}</code></span>
+                <Radio className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
+                <span>Watching live with party • Video ID: <code className="text-indigo-300 font-mono font-semibold">{videoState.videoId}</code></span>
               </div>
-              <span className="text-[11px] text-slate-500">Only Host/Mods can change the video</span>
+              <span className="text-[11px] text-slate-500 font-medium">Watch Only • Controls managed by Host & Mods</span>
             </div>
           )}
 
@@ -458,16 +548,6 @@ export const RoomPage: React.FC = () => {
               onChangeVideoClick={() => setIsVideoModalOpen(true)}
             />
           </div>
-
-          {/* Viewer notice banner if participant */}
-          {!canControl && (
-            <div className="mt-3 p-3 rounded-xl bg-slate-900/60 border border-white/5 flex items-center justify-between text-xs text-slate-400">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Playback is synchronized with the Host and Moderators. Viewer controls are read-only.</span>
-              </div>
-            </div>
-          )}
         </section>
 
         {/* Right Sidebar: Participants & Live Chat */}

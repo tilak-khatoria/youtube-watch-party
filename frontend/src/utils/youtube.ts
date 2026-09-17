@@ -39,3 +39,19 @@ export function extractYouTubeVideoId(input: string): string | null {
 
   return null;
 }
+
+/**
+ * Normalizes room code prefixes cleanly so both '13m4x1' and 'party-13m4x1'
+ * resolve to the exact same canonical room ID ('party-13m4x1').
+ */
+export function normalizeRoomId(input: string | undefined | null): string {
+  if (!input || typeof input !== 'string') return '';
+  const trimmed = input.trim().toLowerCase();
+  // Strip any leading path if a full URL was pasted
+  const code = trimmed.includes('/') ? trimmed.split('/').pop() || trimmed : trimmed;
+  // Strip query parameters or hash
+  const cleanCode = code.split('?')[0]?.split('#')[0] || code;
+  // If starts with 'party-', strip it to find the base ID, then always format as 'party-[baseId]'
+  const baseId = cleanCode.startsWith('party-') ? cleanCode.slice(6) : cleanCode;
+  return `party-${baseId}`;
+}

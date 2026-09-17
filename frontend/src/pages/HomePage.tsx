@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
+import { normalizeRoomId } from '../utils/youtube';
 import {
   PlusCircle,
   LogIn,
@@ -40,7 +41,8 @@ export const HomePage: React.FC = () => {
     setErrorMessage('');
 
     const username = createUsername.trim() || `Host_${Math.floor(1000 + Math.random() * 9000)}`;
-    const roomId = (customRoomId.trim() || generateRandomCode()).toLowerCase();
+    const rawId = customRoomId.trim() || generateRandomCode();
+    const roomId = normalizeRoomId(rawId);
 
     // Store preferred username in localStorage for persistence
     localStorage.setItem('syncparty_username', username);
@@ -63,11 +65,7 @@ export const HomePage: React.FC = () => {
       return;
     }
 
-    let cleanRoomId = joinRoomId.trim();
-    // Handle full URLs like http://localhost:5173/room/abc123
-    if (cleanRoomId.includes('/room/')) {
-      cleanRoomId = cleanRoomId.split('/room/')[1]?.split('?')[0]?.split('#')[0] || cleanRoomId;
-    }
+    const cleanRoomId = normalizeRoomId(joinRoomId);
 
     const username = joinUsername.trim() || `Viewer_${Math.floor(1000 + Math.random() * 9000)}`;
     localStorage.setItem('syncparty_username', username);
