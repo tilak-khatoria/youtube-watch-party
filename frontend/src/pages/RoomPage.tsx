@@ -439,25 +439,25 @@ export const RoomPage: React.FC = () => {
   // DIRECT LINK FALLBACK UI
   if (isDirectLinkFallback) {
     return (
-      <div className="min-h-screen flex flex-col bg-black text-white transition-colors">
+      <div className="min-h-screen flex flex-col bg-pure-black text-on-surface transition-colors">
         <Navbar />
         <div className="flex-1 flex items-center justify-center p-4">
-          <div className="glass-elevated rounded-2xl p-6 sm:p-8 max-w-md w-full border border-white/[0.08] bg-white/[0.03] animate-fade-in-up">
+          <div className="glass-elevated rounded-2xl p-6 sm:p-8 max-w-md w-full border border-border-focus bg-glass-elevated animate-fade-in-up">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-9 h-9 rounded-lg bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-cyan-400">
+              <div className="w-9 h-9 rounded-lg bg-glass-recessed border border-border-subtle flex items-center justify-center text-primary">
                 <Tv className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-white">Join Watch Party</h2>
-                <p className="text-xs text-neutral-400">
-                  Room: <code className="font-mono text-cyan-400 font-medium">{canonicalRoomId}</code>
+                <h2 className="text-sm font-semibold text-text-primary">Join Watch Party</h2>
+                <p className="text-xs text-text-secondary">
+                  Room: <code className="font-mono text-primary font-medium">{canonicalRoomId}</code>
                 </p>
               </div>
             </div>
 
             <form onSubmit={handleDirectJoinSubmit} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-medium text-neutral-300 mb-1">
+                <label className="block text-xs font-medium text-text-secondary mb-1">
                   Enter Your Display Name <span className="text-rose-400">*</span>
                 </label>
                 <input
@@ -469,7 +469,7 @@ export const RoomPage: React.FC = () => {
                     setDirectNameInput(e.target.value);
                     setDirectNameError('');
                   }}
-                  className="glass-input w-full rounded-lg px-3.5 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none"
+                  className="glass-input w-full rounded-lg px-3.5 py-2.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
                 />
                 {directNameError && (
                   <p className="text-xs text-rose-400 mt-1 font-medium">{directNameError}</p>
@@ -478,7 +478,7 @@ export const RoomPage: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full py-2.5 px-4 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:scale-[1.01]"
+                className="w-full py-2.5 px-4 rounded-lg bg-primary-container hover:bg-primary-hover text-pure-black font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:scale-[1.01]"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Join</span>
@@ -492,7 +492,7 @@ export const RoomPage: React.FC = () => {
 
   return (
     <ErrorBoundary fallbackTitle="Watch Room Encountered an Issue">
-      <div className="min-h-screen flex flex-col bg-black text-white transition-colors">
+      <div className="min-h-screen flex flex-col bg-pure-black text-on-surface transition-colors">
         <Navbar
           roomId={canonicalRoomId}
           username={username}
@@ -507,22 +507,22 @@ export const RoomPage: React.FC = () => {
             {/* Top Banner with Room info & Copy Share */}
             <div className="flex flex-wrap items-center justify-between gap-3 mb-3 px-1">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-neutral-400">Current Room:</span>
-                <span className="text-xs font-mono font-medium text-white bg-white/[0.04] border border-white/[0.08] px-2 py-0.5 rounded">
+                <span className="text-xs text-text-muted">Current Room:</span>
+                <span className="text-xs font-mono font-medium text-primary bg-glass-recessed border border-border-subtle px-2 py-0.5 rounded">
                   {canonicalRoomId}
                 </span>
                 <button
                   onClick={handleCopyInviteLink}
-                  className="flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-medium bg-white/[0.04] hover:bg-white/10 text-neutral-300 border border-white/[0.08] transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-medium bg-glass-base hover:bg-white/10 text-text-secondary border border-border-subtle transition-colors cursor-pointer"
                 >
                   {isCopied ? (
                     <>
-                      <Check className="w-3 h-3 text-emerald-400" />
-                      <span className="text-emerald-400">Copied!</span>
+                      <Check className="w-3 h-3 text-secondary" />
+                      <span className="text-secondary">Copied!</span>
                     </>
                   ) : (
                     <>
-                      <Share2 className="w-3 h-3 text-cyan-400" />
+                      <Share2 className="w-3 h-3 text-primary" />
                       <span>Share Link</span>
                     </>
                   )}
@@ -532,18 +532,18 @@ export const RoomPage: React.FC = () => {
               {/* Role Notice Indicator */}
               <div className="flex items-center gap-2">
                 {isHost && (
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded">
-                    <Crown className="w-3 h-3 text-amber-400" /> You are the Host
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-tertiary bg-tertiary/10 border border-tertiary/20 px-2.5 py-0.5 rounded">
+                    <Crown className="w-3 h-3 text-tertiary" /> You are the Host
                   </span>
                 )}
                 {isModerator && (
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-0.5 rounded">
-                    <Shield className="w-3 h-3 text-cyan-400" /> Moderator Controls Enabled
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded">
+                    <Shield className="w-3 h-3 text-primary" /> Moderator Controls Enabled
                   </span>
                 )}
                 {isParticipantOrViewer && (
-                  <span className="flex items-center gap-1.5 text-xs font-normal text-neutral-400 bg-white/[0.03] border border-white/[0.08] px-2.5 py-0.5 rounded">
-                    <Eye className="w-3 h-3 text-neutral-400" /> Watch Only Mode
+                  <span className="flex items-center gap-1.5 text-xs font-normal text-text-muted bg-glass-base border border-border-subtle px-2.5 py-0.5 rounded">
+                    <Eye className="w-3 h-3 text-text-muted" /> Watch Only Mode
                   </span>
                 )}
               </div>
@@ -553,7 +553,7 @@ export const RoomPage: React.FC = () => {
             {isHostOrModerator ? (
               <form
                 onSubmit={handleInlineUrlSubmit}
-                className="mb-3 p-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] flex items-center gap-2 shadow-sm"
+                className="mb-3 p-1.5 rounded-xl border border-border-subtle bg-glass-base flex items-center gap-2 shadow-sm"
               >
                 <div className="relative flex-1">
                   <input
@@ -561,15 +561,15 @@ export const RoomPage: React.FC = () => {
                     placeholder="Paste YouTube URL or Video ID to change video for everyone..."
                     value={inlineVideoUrl}
                     onChange={(e) => setInlineVideoUrl(e.target.value)}
-                    className="glass-input w-full rounded-lg px-3 py-1.5 pl-8 text-xs font-mono text-white placeholder-neutral-500 focus:outline-none"
+                    className="glass-input w-full rounded-lg px-3 py-1.5 pl-8 text-xs font-mono text-text-primary placeholder:text-text-muted focus:outline-none"
                   />
-                  <PlaySquare className="w-3.5 h-3.5 text-cyan-400 absolute left-2.5 top-2.5" />
+                  <PlaySquare className="w-3.5 h-3.5 text-primary absolute left-2.5 top-2.5" />
                 </div>
 
                 <button
                   type="submit"
                   disabled={!inlineVideoUrl.trim()}
-                  className="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed text-black text-xs font-semibold transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-primary-container hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed text-pure-black text-xs font-semibold transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>Change Video</span>
                 </button>
@@ -577,26 +577,26 @@ export const RoomPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsVideoModalOpen(true)}
-                  className="px-2.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10 text-neutral-300 border border-white/[0.08] text-xs font-medium transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10 text-text-secondary border border-border-subtle text-xs font-medium transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
                   title="Browse video presets"
                 >
-                  <Sparkles className="w-3 h-3 text-amber-400" />
+                  <Sparkles className="w-3 h-3 text-tertiary" />
                   <span className="hidden sm:inline">Presets</span>
                 </button>
               </form>
             ) : (
               /* Informative status bar for Participants / Viewers */
-              <div className="mb-3 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-between text-xs text-neutral-400">
+              <div className="mb-3 px-3 py-2 rounded-xl bg-glass-base border border-border-subtle flex items-center justify-between text-xs text-text-secondary">
                 <div className="flex items-center gap-2">
-                  <Radio className="w-3 h-3 text-cyan-400 animate-pulse" />
+                  <Radio className="w-3 h-3 text-primary animate-pulse" />
                   <span>
                     Watching live with party • Video ID:{' '}
-                    <code className="text-cyan-400 font-mono font-medium">
+                    <code className="text-primary font-mono font-medium">
                       {videoState?.videoId || 'dQw4w9WgXcQ'}
                     </code>
                   </span>
                 </div>
-                <span className="text-[11px] text-neutral-500 font-normal">
+                <span className="text-[11px] text-text-muted font-normal">
                   Watch Only • Managed by Host & Mods
                 </span>
               </div>
@@ -620,15 +620,15 @@ export const RoomPage: React.FC = () => {
           </section>
 
           {/* Right Sidebar: Participants & Live Chat */}
-          <aside className="w-full lg:w-88 xl:w-96 flex flex-col rounded-2xl border border-white/[0.08] bg-white/[0.03] overflow-hidden shadow-lg h-[580px] lg:h-auto shrink-0">
+          <aside className="w-full lg:w-88 xl:w-96 flex flex-col rounded-2xl border border-border-subtle bg-glass-base overflow-hidden shadow-lg h-[580px] lg:h-auto shrink-0">
             {/* Sidebar Tab Header */}
-            <div className="flex items-center border-b border-white/[0.08] bg-black/60">
+            <div className="flex items-center border-b border-border-subtle bg-glass-recessed">
               <button
                 onClick={() => setActiveTab('participants')}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-medium transition-colors border-b-2 cursor-pointer ${
                   activeTab === 'participants'
-                    ? 'border-cyan-500 text-white bg-white/[0.03]'
-                    : 'border-transparent text-neutral-500 hover:text-neutral-200 hover:bg-white/[0.02]'
+                    ? 'border-primary text-text-primary bg-white/[0.03]'
+                    : 'border-transparent text-text-muted hover:text-text-secondary hover:bg-white/[0.02]'
                 }`}
               >
                 <Users className="w-3.5 h-3.5" />
@@ -639,8 +639,8 @@ export const RoomPage: React.FC = () => {
                 onClick={() => setActiveTab('chat')}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-medium transition-colors border-b-2 cursor-pointer ${
                   activeTab === 'chat'
-                    ? 'border-cyan-500 text-white bg-white/[0.03]'
-                    : 'border-transparent text-neutral-500 hover:text-neutral-200 hover:bg-white/[0.02]'
+                    ? 'border-primary text-text-primary bg-white/[0.03]'
+                    : 'border-transparent text-text-muted hover:text-text-secondary hover:bg-white/[0.02]'
                 }`}
               >
                 <MessageSquare className="w-3.5 h-3.5" />

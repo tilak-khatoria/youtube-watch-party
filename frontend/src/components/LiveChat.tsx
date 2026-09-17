@@ -43,10 +43,10 @@ export const LiveChat: React.FC<LiveChatProps> = ({
       {/* Messages Feed */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {(messages || []).length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6 text-neutral-500">
-            <Smile className="w-7 h-7 text-neutral-500 mb-2" />
-            <p className="text-xs font-medium text-neutral-300">No messages yet</p>
-            <p className="text-[11px] text-neutral-500 mt-0.5">
+          <div className="h-full flex flex-col items-center justify-center text-center p-6 text-text-muted">
+            <Smile className="w-7 h-7 text-text-muted mb-2" />
+            <p className="text-xs font-medium text-text-primary">No messages yet</p>
+            <p className="text-[11px] text-text-muted mt-0.5">
               Say hello or react with an emoji!
             </p>
           </div>
@@ -64,27 +64,27 @@ export const LiveChat: React.FC<LiveChatProps> = ({
               >
                 {/* Header info */}
                 <div className="flex items-center gap-1.5 mb-1 px-1">
-                  <span className="text-[11px] font-medium text-neutral-300">
+                  <span className="text-[11px] font-medium text-on-surface">
                     {senderName}
                   </span>
 
                   {isHost && (
-                    <span className="flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                      <Crown className="w-2.5 h-2.5 text-amber-400" /> Host
+                    <span className="flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.2 rounded bg-tertiary/10 text-tertiary border border-tertiary/20">
+                      <Crown className="w-2.5 h-2.5 text-tertiary" /> Host
                     </span>
                   )}
                   {isMod && (
-                    <span className="flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.2 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                      <ShieldCheck className="w-2.5 h-2.5 text-cyan-400" /> Mod
+                    <span className="flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.2 rounded bg-primary/10 text-primary border border-primary/20">
+                      <ShieldCheck className="w-2.5 h-2.5 text-primary" /> Mod
                     </span>
                   )}
                   {!isHost && !isMod && (
-                    <span className="flex items-center gap-0.5 text-[9px] text-neutral-400 px-1 py-0.2 rounded bg-white/[0.04]">
-                      <User className="w-2.5 h-2.5 text-neutral-400" /> Viewer
+                    <span className="flex items-center gap-0.5 text-[9px] text-text-muted px-1 py-0.2 rounded bg-white/[0.04]">
+                      <User className="w-2.5 h-2.5 text-text-muted" /> Viewer
                     </span>
                   )}
 
-                  <span className="text-[10px] text-neutral-500 font-mono">
+                  <span className="text-[10px] text-text-muted font-mono">
                     {formatTime(msg?.timestamp || Date.now())}
                   </span>
                 </div>
@@ -93,8 +93,8 @@ export const LiveChat: React.FC<LiveChatProps> = ({
                 <div
                   className={`px-3 py-1.5 rounded-xl text-xs max-w-[85%] break-words shadow-sm ${
                     isSelf
-                      ? 'bg-cyan-500 text-black font-medium rounded-tr-none'
-                      : 'bg-white/[0.05] text-neutral-200 border border-white/[0.08] rounded-tl-none'
+                      ? 'bg-primary-container text-pure-black font-medium rounded-tr-none'
+                      : 'bg-white/[0.05] text-on-surface border border-border-subtle rounded-tl-none'
                   }`}
                 >
                   {msg?.message || ''}
@@ -107,8 +107,8 @@ export const LiveChat: React.FC<LiveChatProps> = ({
       </div>
 
       {/* Quick Reaction Bar */}
-      <div className="px-3 py-1 border-t border-white/[0.08] flex items-center gap-1.5 overflow-x-auto bg-black/40">
-        <span className="text-[10px] font-medium text-neutral-500 uppercase shrink-0">
+      <div className="px-3 py-1 border-t border-border-subtle flex items-center gap-1.5 overflow-x-auto bg-black/40">
+        <span className="text-[10px] font-medium text-text-muted uppercase shrink-0">
           React:
         </span>
         {QUICK_EMOJIS.map((emoji) => (
@@ -125,19 +125,19 @@ export const LiveChat: React.FC<LiveChatProps> = ({
       {/* Input Form */}
       <form
         onSubmit={handleSubmit}
-        className="p-2.5 border-t border-white/[0.08] bg-black/60 flex items-center gap-2"
+        className="p-2.5 border-t border-border-subtle bg-black/60 flex items-center gap-2"
       >
         <input
           type="text"
           placeholder="Send a chat message..."
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          className="flex-1 glass-input rounded-lg px-3 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none"
+          className="flex-1 glass-input rounded-lg px-3 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
         />
         <button
           type="submit"
           disabled={!inputText.trim()}
-          className="p-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed text-black transition-colors shrink-0 cursor-pointer"
+          className="p-1.5 rounded-lg bg-primary-container hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed text-pure-black transition-colors shrink-0 cursor-pointer"
         >
           <Send className="w-3.5 h-3.5" />
         </button>

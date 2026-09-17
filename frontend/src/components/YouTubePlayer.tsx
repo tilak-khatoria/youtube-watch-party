@@ -370,10 +370,10 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col w-full h-full bg-black rounded-2xl overflow-hidden border border-white/[0.08] shadow-oled-2xl relative group"
+      className="flex flex-col w-full h-full bg-pure-black rounded-2xl overflow-hidden border border-border-subtle shadow-oled-2xl relative group"
     >
       {/* Video Viewport Container */}
-      <div className="relative w-full flex-1 min-h-[300px] bg-black flex items-center justify-center overflow-hidden">
+      <div className="relative w-full flex-1 min-h-[300px] bg-pure-black flex items-center justify-center overflow-hidden">
         <div
           ref={viewportRef}
           className="w-full h-full absolute inset-0"
@@ -394,27 +394,27 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
         {/* Status Overlay Badges */}
         <div className="absolute top-3.5 left-3.5 z-30 flex items-center gap-2 pointer-events-none">
           {isHost && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/80 border border-amber-500/30 text-amber-400 text-xs font-medium backdrop-blur-md">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/80 border border-tertiary/30 text-tertiary text-xs font-medium backdrop-blur-md">
+              <Sparkles className="w-3.5 h-3.5 text-tertiary" />
               <span>Host Controller Active</span>
             </div>
           )}
           {isModerator && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/80 border border-cyan-500/30 text-cyan-400 text-xs font-medium backdrop-blur-md">
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/80 border border-primary/30 text-primary text-xs font-medium backdrop-blur-md">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
               <span>Moderator Controller Active</span>
             </div>
           )}
           {isParticipantOrViewer && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/80 border border-white/10 text-neutral-400 text-xs font-medium backdrop-blur-md">
-              <Lock className="w-3.5 h-3.5 text-neutral-400" />
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/80 border border-border-subtle text-text-muted text-xs font-medium backdrop-blur-md">
+              <Lock className="w-3.5 h-3.5 text-text-muted" />
               <span>Watch Only (Synced)</span>
             </div>
           )}
 
           {isBuffering && (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/80 border border-white/10 text-neutral-300 text-xs font-medium backdrop-blur-md">
-              <RefreshCw className="w-3 h-3 animate-spin text-cyan-400" />
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/80 border border-border-subtle text-neutral-300 text-xs font-medium backdrop-blur-md">
+              <RefreshCw className="w-3 h-3 animate-spin text-primary" />
               <span>Buffering</span>
             </div>
           )}
@@ -422,10 +422,10 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
       </div>
 
       {/* Unified Control Bar */}
-      <div className="p-3 bg-black border-t border-white/[0.08] flex flex-col gap-2 z-30 transition-colors">
+      <div className="p-3 bg-pure-black border-t border-border-subtle flex flex-col gap-2 z-30 transition-colors">
         {/* Scrubber Progress Bar */}
         <div className="flex items-center gap-3">
-          <span className="text-[11px] font-mono text-neutral-400 min-w-[38px] text-right">
+          <span className="text-[11px] font-mono text-text-muted min-w-[38px] text-right">
             {formatSeconds(localTime)}
           </span>
 
@@ -438,7 +438,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
                 step={1}
                 value={localTime}
                 onChange={handleSeekChange}
-                className="w-full h-1 rounded-lg appearance-none cursor-pointer accent-cyan-400 hover:h-1.5 bg-neutral-800 transition-all"
+                className="w-full h-1 rounded-lg appearance-none cursor-pointer accent-primary-container hover:h-1.5 bg-neutral-800 transition-all"
                 title="Seek video timeline"
               />
             ) : (
@@ -447,14 +447,14 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
                 title="Timeline scrubbing is restricted to Host and Moderators"
               >
                 <div
-                  className="h-full bg-cyan-400 rounded-lg transition-all duration-300"
+                  className="h-full bg-primary-container rounded-lg transition-all duration-300"
                   style={{ width: `${duration > 0 ? (localTime / duration) * 100 : 0}%` }}
                 />
               </div>
             )}
           </div>
 
-          <span className="text-[11px] font-mono text-neutral-400 min-w-[38px]">
+          <span className="text-[11px] font-mono text-text-muted min-w-[38px]">
             {formatSeconds(duration)}
           </span>
         </div>
@@ -467,7 +467,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
               <button
                 onClick={handleTogglePlay}
                 title={isPlaying ? 'Pause' : 'Play'}
-                className="p-2 rounded-md bg-cyan-500 hover:bg-cyan-400 text-black transition-colors cursor-pointer"
+                className="p-2 rounded-md bg-primary-container hover:bg-primary-hover text-pure-black transition-colors cursor-pointer"
               >
                 {isPlaying ? (
                   <Pause className="w-3.5 h-3.5 fill-current" />
@@ -477,10 +477,10 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
               </button>
             ) : (
               <div
-                className="flex items-center gap-1 px-2 py-1 rounded bg-white/[0.04] border border-white/[0.08] text-neutral-400 text-xs cursor-not-allowed"
+                className="flex items-center gap-1 px-2 py-1 rounded bg-white/[0.04] border border-border-subtle text-text-muted text-xs cursor-not-allowed"
                 title="Only Host/Moderators can control playback"
               >
-                <Lock className="w-3 h-3 text-neutral-400" />
+                <Lock className="w-3 h-3 text-text-muted" />
                 <span className="text-[11px]">Watch Only</span>
               </div>
             )}
@@ -489,11 +489,11 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={handleToggleMute}
-                className="p-1 text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                className="p-1 text-text-muted hover:text-white transition-colors cursor-pointer"
                 title={isMuted ? 'Unmute' : 'Mute'}
               >
                 {isMuted || volume === 0 ? (
-                  <VolumeX className="w-3.5 h-3.5 text-rose-400" />
+                  <VolumeX className="w-3.5 h-3.5 text-error" />
                 ) : (
                   <Volume2 className="w-3.5 h-3.5" />
                 )}
@@ -504,7 +504,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
                 max={100}
                 value={isMuted ? 0 : volume}
                 onChange={handleVolumeChange}
-                className="w-16 h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                className="w-16 h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-primary-container"
               />
             </div>
           </div>
@@ -513,10 +513,10 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={handleManualResync}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-white/[0.04] hover:bg-white/10 text-neutral-300 border border-white/[0.08] transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-white/[0.04] hover:bg-white/10 text-text-secondary border border-border-subtle transition-colors cursor-pointer"
               title="Force Resynchronization with Room"
             >
-              <RotateCcw className="w-3 h-3 text-cyan-400" />
+              <RotateCcw className="w-3 h-3 text-primary" />
               <span className="hidden sm:inline text-[11px]">Resync</span>
             </button>
 
@@ -524,16 +524,16 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
               <button
                 onClick={onChangeVideoClick}
                 title="Change Video for Room"
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-white/[0.04] hover:bg-white/10 text-neutral-300 border border-white/[0.08] transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-white/[0.04] hover:bg-white/10 text-text-secondary border border-border-subtle transition-colors cursor-pointer"
               >
-                <Tv className="w-3 h-3 text-cyan-400" />
+                <Tv className="w-3 h-3 text-primary" />
                 <span className="text-[11px]">Change Video</span>
               </button>
             )}
 
             <button
               onClick={handleFullscreen}
-              className="p-1 text-neutral-400 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer"
+              className="p-1 text-text-muted hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer"
               title="Fullscreen"
             >
               <Maximize2 className="w-3.5 h-3.5" />
