@@ -17,10 +17,7 @@ services:
       - key: PORT
         value: 10000
       - key: FRONTEND_URL
-        fromService:
-          type: web
-          name: youtube-watch-party-frontend
-          property: url
+        sync: false
 
   # =======================================================
   # 2. Frontend Static Site (React + Vite Single Page App)
@@ -29,7 +26,6 @@ services:
     name: youtube-watch-party-frontend
     runtime: static
     plan: free
-    region: oregon
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
@@ -39,7 +35,4 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_BACKEND_URL
-        fromService:
-          type: web
-          name: youtube-watch-party-backend
-          property: url
+        sync: false
