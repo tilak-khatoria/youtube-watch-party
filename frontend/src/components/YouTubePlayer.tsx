@@ -436,10 +436,10 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
       </div>
 
       {/* Unified Synchronized Playback Control Bar */}
-      <div className="p-3.5 bg-[#0e1018] border-t border-white/10 flex flex-col gap-2.5 z-30">
+      <div className="p-3.5 bg-white dark:bg-[#0e1018] border-t border-slate-200 dark:border-white/10 flex flex-col gap-2.5 z-30 transition-colors">
         {/* Scrubber Progress Bar */}
         <div className="flex items-center gap-3">
-          <span className="text-[11px] font-mono text-slate-400 min-w-[38px] text-right">
+          <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 min-w-[38px] text-right">
             {formatSeconds(localTime)}
           </span>
 
@@ -452,24 +452,24 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
                 step={1}
                 value={localTime}
                 onChange={handleSeekChange}
-                className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-indigo-500 hover:h-2 bg-slate-800 transition-all"
+                className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-indigo-600 dark:accent-indigo-500 hover:h-2 bg-slate-200 dark:bg-slate-800 transition-all"
                 title="Seek video timeline"
               />
             ) : (
               /* Non-interactive static progress bar for Participants / Viewers */
               <div
-                className="w-full h-1.5 rounded-lg bg-slate-800 overflow-hidden relative cursor-not-allowed"
+                className="w-full h-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 overflow-hidden relative cursor-not-allowed"
                 title="Timeline scrubbing is restricted to Host and Moderators"
               >
                 <div
-                  className="h-full bg-indigo-500/60 rounded-lg transition-all duration-300"
+                  className="h-full bg-indigo-600/60 dark:bg-indigo-500/60 rounded-lg transition-all duration-300"
                   style={{ width: `${duration > 0 ? (localTime / duration) * 100 : 0}%` }}
                 />
               </div>
             )}
           </div>
 
-          <span className="text-[11px] font-mono text-slate-400 min-w-[38px]">
+          <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 min-w-[38px]">
             {formatSeconds(duration)}
           </span>
         </div>
@@ -482,7 +482,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
               <button
                 onClick={handleTogglePlay}
                 title={isPlaying ? 'Pause (Broadcasts to room)' : 'Play (Broadcasts to room)'}
-                className={`p-2.5 rounded-xl flex items-center justify-center transition-all shadow-md ${
+                className={`p-2.5 rounded-xl flex items-center justify-center transition-all shadow-md cursor-pointer ${
                   isPlaying
                     ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/30 hover:scale-105'
                     : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 hover:scale-105'
@@ -497,10 +497,10 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
             ) : (
               /* Informative Watch Only Badge for Participants instead of interactive play/pause */
               <div
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-white/5 text-slate-400 text-xs font-medium cursor-not-allowed"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-400 text-xs font-medium cursor-not-allowed"
                 title="Only Host/Moderators can control playback"
               >
-                <Lock className="w-3.5 h-3.5 text-slate-500" />
+                <Lock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                 <span className="hidden sm:inline">Watch Only</span>
               </div>
             )}
@@ -509,11 +509,11 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
             <div className="flex items-center gap-2 group/vol">
               <button
                 onClick={handleToggleMute}
-                className="p-1.5 text-slate-400 hover:text-white transition-colors"
+                className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
                 title={isMuted ? 'Unmute' : 'Mute'}
               >
                 {isMuted || volume === 0 ? (
-                  <VolumeX className="w-4 h-4 text-rose-400" />
+                  <VolumeX className="w-4 h-4 text-rose-500 dark:text-rose-400" />
                 ) : (
                   <Volume2 className="w-4 h-4" />
                 )}
@@ -524,7 +524,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
                 max={100}
                 value={isMuted ? 0 : volume}
                 onChange={handleVolumeChange}
-                className="w-16 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                className="w-16 h-1 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-600 dark:accent-indigo-500"
               />
             </div>
           </div>
@@ -534,10 +534,10 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
             {/* Resync Button (Available to all users if they drift or buffer) */}
             <button
               onClick={handleManualResync}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-white/10 transition-all hover:scale-105"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/10 transition-all hover:scale-105 shadow-sm cursor-pointer"
               title="Force Resynchronization with Room"
             >
-              <RotateCcw className="w-3.5 h-3.5 text-indigo-400" />
+              <RotateCcw className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               <span className="hidden sm:inline">Resync</span>
             </button>
 
@@ -546,9 +546,9 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
               <button
                 onClick={onChangeVideoClick}
                 title="Change Video for Room"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-white/10 hover:border-indigo-500/40 hover:scale-105 shadow-sm transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white border border-slate-200 dark:border-white/10 hover:border-indigo-500/40 hover:scale-105 shadow-sm transition-all cursor-pointer"
               >
-                <Tv className="w-3.5 h-3.5 text-rose-400" />
+                <Tv className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
                 <span>Change Video</span>
               </button>
             )}
@@ -556,7 +556,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
             {/* Fullscreen Button */}
             <button
               onClick={handleFullscreen}
-              className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+              className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all cursor-pointer"
               title="Fullscreen"
             >
               <Maximize2 className="w-4 h-4" />

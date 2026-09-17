@@ -1,11 +1,13 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --bg-main: #0a0b10;
-  --bg-card: #12141e;
-  --bg-card-hover: #181b2a;
-  --bg-glass: rgba(18, 20, 30, 0.75);
-  --border-glass: rgba(255, 255, 255, 0.08);
+  --bg-main: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --bg-glass: rgba(255, 255, 255, 0.85);
+  --border-glass: rgba(0, 0, 0, 0.08);
   --border-focus: rgba(99, 102, 241, 0.5);
 
   --accent-purple: #8b5cf6;
@@ -15,12 +17,25 @@
   --accent-red: #ef4444;
   --accent-emerald: #10b981;
 
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
   
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+}
+
+.dark {
+  --bg-main: #090a10;
+  --bg-card: #12141e;
+  --bg-card-hover: #181b2a;
+  --bg-glass: rgba(18, 20, 30, 0.75);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(99, 102, 241, 0.5);
+
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
 }
 
 * {
@@ -35,6 +50,7 @@ body {
   font-family: var(--font-sans);
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
   background-image: 
     radial-gradient(circle at 15% 15%, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
     radial-gradient(circle at 85% 85%, rgba(59, 130, 246, 0.08) 0%, transparent 40%);
@@ -47,13 +63,19 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(148, 163, 184, 0.3);
   border-radius: 4px;
 }
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
 ::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
 
@@ -69,8 +91,12 @@ body {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .glass-panel-hover:hover {
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(99, 102, 241, 0.3);
   transform: translateY(-2px);
+  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.15);
+}
+.dark .glass-panel-hover:hover {
+  border-color: rgba(255, 255, 255, 0.18);
   box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5);
 }
 
@@ -87,11 +113,11 @@ body {
 }
 
 .glow-purple {
-  box-shadow: 0 0 25px -5px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 0 25px -5px rgba(139, 92, 246, 0.3);
 }
 
 .glow-red {
-  box-shadow: 0 0 25px -5px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 25px -5px rgba(239, 68, 68, 0.3);
 }
 
 /* Custom Animations */

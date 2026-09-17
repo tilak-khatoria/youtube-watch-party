@@ -60,19 +60,19 @@ export const ParticipantList: React.FC<ParticipantListProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-transparent">
       {/* Header */}
-      <div className="p-4 border-b border-white/10">
+      <div className="p-4 border-b border-slate-200 dark:border-white/10">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <h3 className="font-bold text-sm text-white">Participants</h3>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono font-semibold">
+            <h3 className="font-bold text-sm text-slate-900 dark:text-white">Participants</h3>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-mono font-semibold">
               {(participants || []).length}
             </span>
           </div>
           {isCurrentUserHost && (
-            <span className="text-[10px] text-amber-400/90 font-medium bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-              <Crown className="w-3 h-3 text-amber-400" /> Host Controls Active
+            <span className="text-[10px] text-amber-700 dark:text-amber-400 font-medium bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <Crown className="w-3 h-3 text-amber-500 dark:text-amber-400" /> Host Controls
             </span>
           )}
         </div>
@@ -84,16 +84,16 @@ export const ParticipantList: React.FC<ParticipantListProps> = ({
             placeholder="Search participants..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-900/80 border border-white/10 rounded-xl px-3 py-1.5 pl-8 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+            className="w-full bg-slate-100 dark:bg-slate-900/80 border border-slate-300/80 dark:border-white/10 rounded-xl px-3 py-1.5 pl-8 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
           />
-          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" />
+          <Search className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 absolute left-2.5 top-2.5" />
         </div>
       </div>
 
       {/* Participants List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {filteredParticipants.length === 0 ? (
-          <div className="text-center py-8 text-slate-500 text-xs">No participants found</div>
+          <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-xs">No participants found</div>
         ) : (
           filteredParticipants.map((p) => {
             const isSelf = p?.id === currentUserId;
@@ -107,8 +107,8 @@ export const ParticipantList: React.FC<ParticipantListProps> = ({
                 key={p?.id || Math.random().toString()}
                 className={`relative group flex items-center justify-between p-2.5 rounded-xl border transition-all ${
                   isSelf
-                    ? 'bg-indigo-950/20 border-indigo-500/30'
-                    : 'bg-slate-900/40 hover:bg-slate-900/70 border-white/5'
+                    ? 'bg-indigo-50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-500/30'
+                    : 'bg-slate-50 dark:bg-slate-900/40 hover:bg-slate-100 dark:hover:bg-slate-900/70 border-slate-200/80 dark:border-white/5'
                 }`}
               >
                 {/* User Info */}
@@ -119,7 +119,7 @@ export const ParticipantList: React.FC<ParticipantListProps> = ({
                         ? 'bg-gradient-to-tr from-amber-600 to-yellow-400 text-slate-950'
                         : isMod
                         ? 'bg-gradient-to-tr from-cyan-600 to-blue-500 text-white'
-                        : 'bg-slate-800 text-slate-300'
+                        : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                     }`}
                   >
                     {initialLetter}
@@ -127,11 +127,11 @@ export const ParticipantList: React.FC<ParticipantListProps> = ({
 
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-xs font-semibold text-white truncate max-w-[120px]">
+                      <p className="text-xs font-semibold text-slate-900 dark:text-white truncate max-w-[120px]">
                         {displayName}
                       </p>
                       {isSelf && (
-                        <span className="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.2 rounded">
+                        <span className="text-[9px] font-bold text-indigo-700 dark:text-indigo-400 bg-indigo-500/10 px-1.5 py-0.2 rounded">
                           YOU
                         </span>
                       )}
@@ -140,18 +140,18 @@ export const ParticipantList: React.FC<ParticipantListProps> = ({
                     {/* Role Badge */}
                     <div className="flex items-center gap-1 mt-0.5">
                       {isHost && (
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-amber-400">
-                          <Crown className="w-3 h-3 text-amber-400" /> Host
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-400">
+                          <Crown className="w-3 h-3 text-amber-500 dark:text-amber-400" /> Host
                         </span>
                       )}
                       {isMod && (
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-cyan-400">
-                          <ShieldCheck className="w-3 h-3 text-cyan-400" /> Moderator
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-cyan-700 dark:text-cyan-400">
+                          <ShieldCheck className="w-3 h-3 text-cyan-500 dark:text-cyan-400" /> Moderator
                         </span>
                       )}
                       {!isHost && !isMod && (
-                        <span className="flex items-center gap-1 text-[10px] text-slate-400">
-                          <User className="w-3 h-3 text-slate-500" /> Viewer
+                        <span className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400">
+                          <User className="w-3 h-3 text-slate-400 dark:text-slate-500" /> Viewer
                         </span>
                       )}
                     </div>
@@ -165,10 +165,10 @@ export const ParticipantList: React.FC<ParticipantListProps> = ({
                     <button
                       onClick={() => handleToggleModerator(p)}
                       title={isMod ? 'Demote to Viewer' : 'Promote to Moderator'}
-                      className={`p-1.5 rounded-lg border text-xs transition-all ${
+                      className={`p-1.5 rounded-lg border text-xs transition-all cursor-pointer ${
                         isMod
-                          ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 hover:bg-cyan-500/30'
-                          : 'bg-slate-800 text-slate-400 border-white/5 hover:text-cyan-300 hover:border-cyan-500/30'
+                          ? 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/40 hover:bg-cyan-500/20'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/5 hover:text-cyan-600 dark:hover:text-cyan-300'
                       }`}
                     >
                       <ShieldCheck className="w-3.5 h-3.5" />
@@ -180,37 +180,37 @@ export const ParticipantList: React.FC<ParticipantListProps> = ({
                         onClick={() =>
                           setActiveMenuId(activeMenuId === p.id ? null : p.id)
                         }
-                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/5 transition-all"
+                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/5 transition-all cursor-pointer"
                       >
                         <MoreVertical className="w-3.5 h-3.5" />
                       </button>
 
                       {/* Dropdown Menu */}
                       {activeMenuId === p.id && (
-                        <div className="absolute right-0 top-full mt-1.5 z-30 w-44 bg-[#181a26] border border-white/10 rounded-xl shadow-2xl p-1.5 space-y-1">
+                        <div className="absolute right-0 top-full mt-1.5 z-30 w-44 bg-white dark:bg-[#181a26] border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl p-1.5 space-y-1">
                           <button
                             onClick={() => handleToggleModerator(p)}
-                            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-200 hover:bg-white/10 rounded-lg transition-colors text-left"
+                            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-colors text-left cursor-pointer"
                           >
-                            <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                            <ShieldCheck className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" />
                             <span>{isMod ? 'Demote to Viewer' : 'Make Moderator'}</span>
                           </button>
 
                           <button
                             onClick={() => setConfirmHostTransferId(p.id)}
-                            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-amber-300 hover:bg-amber-500/10 rounded-lg transition-colors text-left"
+                            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-lg transition-colors text-left cursor-pointer"
                           >
-                            <ArrowRightLeft className="w-3.5 h-3.5 text-amber-400" />
+                            <ArrowRightLeft className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                             <span>Transfer Host</span>
                           </button>
 
-                          <div className="h-[1px] bg-white/10 my-1" />
+                          <div className="h-[1px] bg-slate-200 dark:bg-white/10 my-1" />
 
                           <button
                             onClick={() => handleKick(p.id)}
-                            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors text-left font-medium"
+                            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors text-left font-medium cursor-pointer"
                           >
-                            <UserMinus className="w-3.5 h-3.5 text-rose-400" />
+                            <UserMinus className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
                             <span>Remove from Room</span>
                           </button>
                         </div>
@@ -226,26 +226,26 @@ export const ParticipantList: React.FC<ParticipantListProps> = ({
 
       {/* Transfer Host Confirmation Modal */}
       {confirmHostTransferId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#161826] border border-amber-500/30 rounded-2xl max-w-sm w-full p-5 shadow-2xl">
-            <div className="flex items-center gap-2.5 text-amber-400 mb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#161826] border border-amber-500/40 rounded-2xl max-w-sm w-full p-5 shadow-2xl">
+            <div className="flex items-center gap-2.5 text-amber-600 dark:text-amber-400 mb-3">
               <ShieldAlert className="w-5 h-5" />
-              <h4 className="font-bold text-sm text-white">Transfer Host Authority</h4>
+              <h4 className="font-bold text-sm text-slate-900 dark:text-white">Transfer Host Authority</h4>
             </div>
-            <p className="text-xs text-slate-300 leading-relaxed mb-4">
-              Are you sure you want to transfer the <strong className="text-amber-400">Host</strong> role?
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
+              Are you sure you want to transfer the <strong className="text-amber-600 dark:text-amber-400">Host</strong> role?
               You will become a Moderator and the selected user will have full control over the room.
             </p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setConfirmHostTransferId(null)}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleTransferHost(confirmHostTransferId)}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20 transition-all"
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
               >
                 Confirm Transfer
               </button>
