@@ -7,7 +7,7 @@
     "prebuild": "npm install --include=dev",
     "build": "tsc",
     "start": "node dist/src/server.js",
-    "dev": "nodemon --watch src --exec ts-node src/server.ts"
+    "dev": "nodemon --watch src -e ts --exec \"npm run build && node dist/src/server.js\""
   },
   "keywords": [
     "youtube",
