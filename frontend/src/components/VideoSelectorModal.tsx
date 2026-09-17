@@ -86,21 +86,21 @@ export const VideoSelectorModal: React.FC<VideoSelectorModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
-      <div className="bg-white dark:bg-[#121212] border border-neutral-200 dark:border-border-focus rounded-2xl max-w-lg w-full p-6 shadow-2xl relative overflow-hidden backdrop-blur-xl">
+      <div className="bg-white dark:bg-black/95 border border-gray-200 dark:border-white/[0.12] rounded-2xl max-w-lg w-full p-6 shadow-2xl relative overflow-hidden backdrop-blur-xl">
         {/* Modal Header */}
-        <div className="flex items-center justify-between pb-3.5 border-b border-neutral-200 dark:border-border-subtle">
+        <div className="flex items-center justify-between pb-3.5 border-b border-gray-200 dark:border-white/[0.08]">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-neutral-100 dark:bg-white/[0.06] border border-neutral-200 dark:border-border-subtle flex items-center justify-center text-primary shadow-sm">
+            <div className="w-9 h-9 rounded-xl bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800/50 flex items-center justify-center text-cyan-600 dark:text-cyan-400 shadow-sm">
               <PlaySquare className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-semibold text-sm text-text-primary">Change Video</h3>
-              <p className="text-xs text-text-secondary">Load a YouTube video for everyone</p>
+              <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Change Video</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Load a YouTube video for everyone</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-text-muted hover:text-text-primary hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -109,7 +109,7 @@ export const VideoSelectorModal: React.FC<VideoSelectorModalProps> = ({
         {/* Form */}
         <form onSubmit={handleSubmit} className="mt-4 space-y-3.5">
           <div>
-            <label className="block text-xs font-medium text-text-secondary mb-1.5">
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
               YouTube URL or Video ID
             </label>
             <div className="relative flex items-center">
@@ -121,25 +121,25 @@ export const VideoSelectorModal: React.FC<VideoSelectorModalProps> = ({
                   setInputUrl(e.target.value);
                   setError('');
                 }}
-                className="w-full glass-input rounded-xl pl-10 pr-3.5 py-2.5 text-xs font-mono text-text-primary placeholder:text-text-muted focus:outline-none"
+                className="w-full rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono bg-white text-gray-900 border border-gray-300 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 dark:bg-white/5 dark:text-white dark:border-white/10 dark:placeholder-gray-500 placeholder:text-gray-400 focus:outline-none transition-colors"
               />
-              <Search className="w-4 h-4 text-text-muted absolute left-3.5 pointer-events-none" />
+              <Search className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3.5 pointer-events-none" />
             </div>
-            {error && <p className="text-xs text-error mt-1.5 font-medium">{error}</p>}
+            {error && <p className="text-xs text-rose-500 mt-1.5 font-medium">{error}</p>}
           </div>
 
           <button
             type="submit"
-            className="w-full py-3 px-4 rounded-xl bg-primary-container hover:bg-primary-hover text-pure-black font-semibold text-xs transition-all cursor-pointer shadow-sm hover:scale-[1.01]"
+            className="w-full py-3 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition-all cursor-pointer shadow-sm hover:scale-[1.01]"
           >
             Load Video for Room
           </button>
         </form>
 
         {/* Popular Presets */}
-        <div className="mt-5 pt-4 border-t border-neutral-200 dark:border-border-subtle">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary mb-3">
-            <Sparkles className="w-3.5 h-3.5 text-tertiary" />
+        <div className="mt-5 pt-4 border-t border-gray-200 dark:border-white/[0.08]">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 mb-3">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             <span>Popular Presets</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -149,14 +149,14 @@ export const VideoSelectorModal: React.FC<VideoSelectorModalProps> = ({
                 onClick={() => handleSelectPreset(video.id)}
                 className={`flex items-start gap-2.5 p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                   currentVideoId === video.id
-                    ? 'border-primary/50 bg-primary/10 shadow-sm'
-                    : 'border-neutral-200 dark:border-border-subtle bg-neutral-50 dark:bg-white/[0.02] hover:bg-neutral-100 dark:hover:bg-white/[0.06]'
+                    ? 'border-cyan-500/50 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 shadow-sm'
+                    : 'border-gray-200 dark:border-white/[0.08] bg-gray-50 dark:bg-white/[0.02] hover:bg-gray-100 dark:hover:bg-white/[0.06]'
                 }`}
               >
-                <Film className="w-4 h-4 text-text-muted shrink-0 mt-0.5" />
+                <Film className="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-text-primary truncate">{video.title}</p>
-                  <p className="text-[10px] text-text-muted">{video.channel}</p>
+                  <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">{video.title}</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400">{video.channel}</p>
                 </div>
               </button>
             ))}

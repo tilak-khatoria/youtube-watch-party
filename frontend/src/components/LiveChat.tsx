@@ -93,8 +93,8 @@ export const LiveChat: React.FC<LiveChatProps> = ({
                 <div
                   className={`px-3.5 py-2 rounded-2xl text-xs max-w-[85%] break-words shadow-sm ${
                     isSelf
-                      ? 'bg-primary-container text-pure-black font-semibold rounded-tr-xs'
-                      : 'bg-neutral-100 dark:bg-white/[0.05] text-text-primary border border-neutral-200 dark:border-border-subtle rounded-tl-xs'
+                      ? 'bg-cyan-600 text-white font-medium rounded-tr-xs'
+                      : 'bg-gray-100 dark:bg-white/[0.05] text-gray-900 dark:text-white border border-gray-200 dark:border-white/[0.08] rounded-tl-xs'
                   }`}
                 >
                   {msg?.message || ''}
@@ -107,15 +107,15 @@ export const LiveChat: React.FC<LiveChatProps> = ({
       </div>
 
       {/* Quick Reaction Bar */}
-      <div className="px-3 py-1.5 border-t border-neutral-200 dark:border-border-subtle flex items-center gap-1.5 overflow-x-auto bg-neutral-50/80 dark:bg-black/40 backdrop-blur-sm">
-        <span className="text-[10px] font-semibold text-text-muted uppercase shrink-0">
+      <div className="px-3 py-1.5 border-t border-gray-200 dark:border-white/[0.08] flex items-center gap-1.5 overflow-x-auto bg-gray-50/80 dark:bg-black/40 backdrop-blur-sm">
+        <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase shrink-0">
           React:
         </span>
         {QUICK_EMOJIS.map((emoji) => (
           <button
             key={emoji}
             onClick={() => handleSendEmoji(emoji)}
-            className="hover:scale-125 transition-transform text-sm px-1.5 py-0.5 rounded-lg hover:bg-neutral-200 dark:hover:bg-white/10 cursor-pointer"
+            className="hover:scale-125 transition-transform text-sm px-1.5 py-0.5 rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 cursor-pointer"
           >
             {emoji}
           </button>
@@ -125,19 +125,19 @@ export const LiveChat: React.FC<LiveChatProps> = ({
       {/* Input Form */}
       <form
         onSubmit={handleSubmit}
-        className="p-3 border-t border-neutral-200 dark:border-border-subtle bg-white dark:bg-black/60 flex items-center gap-2 backdrop-blur-md"
+        className="p-3 border-t border-gray-200 dark:border-white/[0.08] bg-white dark:bg-black/60 flex items-center gap-2 backdrop-blur-md"
       >
         <input
           type="text"
           placeholder="Send a chat message..."
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          className="flex-1 glass-input rounded-xl px-3.5 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
+          className="flex-1 rounded-xl px-3.5 py-2 text-xs bg-white text-gray-900 border border-gray-300 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 dark:bg-white/5 dark:text-white dark:border-white/10 dark:placeholder-gray-500 placeholder:text-gray-400 focus:outline-none transition-colors"
         />
         <button
           type="submit"
           disabled={!inputText.trim()}
-          className="p-2 rounded-xl bg-primary-container hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed text-pure-black transition-all shrink-0 cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+          className="p-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-all shrink-0 cursor-pointer shadow-sm hover:scale-105 active:scale-95"
         >
           <Send className="w-4 h-4" />
         </button>

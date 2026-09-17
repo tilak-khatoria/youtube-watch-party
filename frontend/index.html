@@ -11,8 +11,25 @@
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <!-- YouTube Iframe API -->
     <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+      (function() {
+        try {
+          var theme = localStorage.getItem('syncparty_theme');
+          if (theme === 'light') {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+          } else {
+            // Default to dark mode (forced dark default)
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+          }
+        } catch (e) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
   </head>
-  <body class="bg-[#090a0f] text-slate-100 min-h-screen antialiased">
+  <body class="bg-gray-50 dark:bg-black text-gray-900 dark:text-white min-h-screen antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

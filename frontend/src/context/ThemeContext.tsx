@@ -19,14 +19,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return stored;
       }
     }
-    return 'system';
+    return 'dark'; // Force Dark Mode Default (not system or light)
   });
 
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => {
     if (typeof window !== 'undefined') {
-      if (theme === 'dark') return 'dark';
       if (theme === 'light') return 'light';
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      return 'dark';
     }
     return 'dark';
   });

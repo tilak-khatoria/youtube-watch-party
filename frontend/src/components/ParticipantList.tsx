@@ -62,17 +62,17 @@ export const ParticipantList: React.FC<ParticipantListProps> = ({
   return (
     <div className="flex flex-col h-full bg-transparent">
       {/* Header */}
-      <div className="p-3.5 border-b border-neutral-200 dark:border-border-subtle">
+      <div className="p-3.5 border-b border-gray-200 dark:border-white/[0.08]">
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-xs text-text-primary">Participants</h3>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/[0.05] text-primary font-mono font-bold border border-neutral-200 dark:border-border-subtle">
+            <h3 className="font-semibold text-xs text-gray-900 dark:text-white">Participants</h3>
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-white/[0.05] text-cyan-700 dark:text-cyan-400 font-mono font-bold border border-gray-200 dark:border-white/10">
               {(participants || []).length}
             </span>
           </div>
           {isCurrentUserHost && (
-            <span className="text-[10px] text-tertiary font-semibold bg-tertiary/10 border border-tertiary/25 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-              <Crown className="w-3 h-3 text-tertiary" /> Host Controls
+            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+              <Crown className="w-3 h-3 text-amber-600 dark:text-amber-400" /> Host Controls
             </span>
           )}
         </div>
@@ -84,9 +84,9 @@ export const ParticipantList: React.FC<ParticipantListProps> = ({
             placeholder="Search participants..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full glass-input rounded-xl pl-9 pr-3.5 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
+            className="w-full rounded-xl pl-9 pr-3.5 py-2 text-xs bg-white text-gray-900 border border-gray-300 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 dark:bg-white/5 dark:text-white dark:border-white/10 dark:placeholder-gray-500 placeholder:text-gray-400 focus:outline-none transition-colors"
           />
-          <Search className="w-4 h-4 text-text-muted absolute left-3 pointer-events-none" />
+          <Search className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3 pointer-events-none" />
         </div>
       </div>
 

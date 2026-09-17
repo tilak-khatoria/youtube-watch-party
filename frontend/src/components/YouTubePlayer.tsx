@@ -438,7 +438,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
                 step={1}
                 value={localTime}
                 onChange={handleSeekChange}
-                className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-primary-container hover:h-2 bg-neutral-700 dark:bg-neutral-800 transition-all"
+                className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-cyan-500 hover:h-2 bg-neutral-700 dark:bg-neutral-800 transition-all"
                 title="Seek video timeline"
               />
             ) : (
@@ -447,7 +447,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
                 title="Timeline scrubbing is restricted to Host and Moderators"
               >
                 <div
-                  className="h-full bg-primary-container rounded-lg transition-all duration-300"
+                  className="h-full bg-cyan-500 rounded-lg transition-all duration-300"
                   style={{ width: `${duration > 0 ? (localTime / duration) * 100 : 0}%` }}
                 />
               </div>
@@ -467,7 +467,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
               <button
                 onClick={handleTogglePlay}
                 title={isPlaying ? 'Pause' : 'Play'}
-                className="p-2.5 rounded-xl bg-primary-container hover:bg-primary-hover text-pure-black transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+                className="p-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
               >
                 {isPlaying ? (
                   <Pause className="w-3.5 h-3.5 fill-current" />
@@ -493,7 +493,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
                 title={isMuted ? 'Unmute' : 'Mute'}
               >
                 {isMuted || volume === 0 ? (
-                  <VolumeX className="w-4 h-4 text-error" />
+                  <VolumeX className="w-4 h-4 text-rose-500" />
                 ) : (
                   <Volume2 className="w-4 h-4" />
                 )}
@@ -504,7 +504,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
                 max={100}
                 value={isMuted ? 0 : volume}
                 onChange={handleVolumeChange}
-                className="w-16 sm:w-20 h-1.5 bg-neutral-700 dark:bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-primary-container"
+                className="w-16 sm:w-20 h-1.5 bg-neutral-700 dark:bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
               />
             </div>
           </div>
@@ -516,7 +516,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/[0.06] hover:bg-white/10 text-neutral-200 border border-white/10 transition-all cursor-pointer shadow-sm"
               title="Force Resynchronization with Room"
             >
-              <RotateCcw className="w-3.5 h-3.5 text-primary" />
+              <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
               <span className="hidden sm:inline text-[11px]">Resync</span>
             </button>
 
@@ -526,7 +526,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
                 title="Change Video for Room"
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/[0.06] hover:bg-white/10 text-neutral-200 border border-white/10 transition-all cursor-pointer shadow-sm"
               >
-                <Tv className="w-3.5 h-3.5 text-primary" />
+                <Tv className="w-3.5 h-3.5 text-cyan-400" />
                 <span className="text-[11px]">Change Video</span>
               </button>
             )}
