@@ -37,15 +37,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-[#0e0e13]/85 backdrop-blur-xl border-b border-white/10 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
+    <header className="sticky top-0 z-50 w-full bg-black/80 backdrop-blur-xl border-b border-white/[0.08] transition-colors">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-[#19191f] border border-[#6C63FF]/40 flex items-center justify-center transition-all group-hover:border-[#00D4FF]">
-            <Tv className="w-4 h-4 text-[#00d2fd]" />
+          <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center transition-colors group-hover:border-cyan-500/40">
+            <Tv className="w-4 h-4 text-cyan-400" />
           </div>
-          <span className="font-space font-bold text-sm sm:text-base tracking-tight text-[#f9f5fd]">
-            Sync<span className="text-kinetic">Party</span>
+          <span className="font-semibold text-sm sm:text-base tracking-tight text-white">
+            SyncParty
           </span>
         </Link>
 
@@ -54,14 +54,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           {roomId ? (
             <>
               {/* Room Code with Copy Link */}
-              <div className="hidden sm:flex items-center gap-1.5 bg-[#19191f] rounded-md px-2.5 py-1 border border-white/10">
-                <span className="text-[11px] space-label text-[#acaab1]">Room:</span>
-                <span className="text-xs font-mono font-semibold text-[#00d2fd] tracking-wider">
+              <div className="hidden sm:flex items-center gap-1.5 bg-white/[0.03] rounded-md px-2.5 py-1 border border-white/[0.08]">
+                <span className="text-[11px] text-neutral-400 font-medium">Room:</span>
+                <span className="text-xs font-mono font-medium text-cyan-400 tracking-wider">
                   {roomId}
                 </span>
                 <button
                   onClick={handleCopyLink}
-                  className="ml-1 p-0.5 hover:bg-white/10 rounded text-[#acaab1] hover:text-[#f9f5fd] transition-all cursor-pointer"
+                  className="ml-1 p-0.5 hover:bg-white/10 rounded text-neutral-400 hover:text-white transition-all cursor-pointer"
                   title="Copy Invite Link"
                 >
                   {copied ? (
@@ -74,23 +74,23 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Current User Role Pill */}
               {username && role && (
-                <div className="flex items-center gap-1.5 bg-[#19191f] rounded-md px-2.5 py-1 border border-white/10">
+                <div className="flex items-center gap-1.5 bg-white/[0.03] rounded-md px-2 py-1 border border-white/[0.08]">
                   {role === 'Host' && (
-                    <span className="flex items-center gap-1 text-[11px] space-label font-bold text-amber-400">
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-400">
                       <Crown className="w-3 h-3 text-amber-400" /> Host
                     </span>
                   )}
                   {role === 'Moderator' && (
-                    <span className="flex items-center gap-1 text-[11px] space-label font-bold text-[#00d2fd]">
-                      <ShieldCheck className="w-3 h-3 text-[#00d2fd]" /> Mod
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-cyan-400">
+                      <ShieldCheck className="w-3 h-3 text-cyan-400" /> Mod
                     </span>
                   )}
                   {(role === 'Participant' || role === 'Viewer') && (
-                    <span className="flex items-center gap-1 text-[11px] space-label font-medium text-[#acaab1]">
-                      <User className="w-3 h-3 text-[#acaab1]" /> Viewer
+                    <span className="flex items-center gap-1 text-[11px] font-medium text-neutral-400">
+                      <User className="w-3 h-3 text-neutral-400" /> Viewer
                     </span>
                   )}
-                  <span className="text-xs text-[#f9f5fd] max-w-[90px] truncate hidden md:inline font-mono">
+                  <span className="text-xs text-neutral-200 max-w-[90px] truncate hidden md:inline font-mono">
                     {username}
                   </span>
                 </div>
@@ -99,16 +99,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Leave Room Button */}
               <button
                 onClick={handleLeave}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-[#acaab1] hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-neutral-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Leave</span>
               </button>
             </>
           ) : (
-            <div className="hidden sm:inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-[#19191f] border border-white/10 text-xs text-[#acaab1]">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
-              <span className="text-[11px] space-label text-[#acaab1]">Live Sync Engine Ready</span>
+            <div className="hidden sm:inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/[0.03] border border-white/[0.08] text-xs font-normal text-neutral-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+              <span className="text-[11px] tracking-tight">Live Sync Engine Ready</span>
             </div>
           )}
 

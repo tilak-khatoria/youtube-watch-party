@@ -15,7 +15,7 @@ export const ThemeToggle: React.FC = () => {
     <div
       role="radiogroup"
       aria-label="Theme selection"
-      className="p-0.5 rounded-xl inline-flex items-center gap-0.5 bg-[#19191f] border border-white/10"
+      className="p-0.5 rounded-lg inline-flex items-center gap-0.5 bg-white/[0.03] border border-white/[0.08]"
     >
       {options.map(({ value, label, icon: Icon }) => {
         const isActive = theme === value;
@@ -26,14 +26,14 @@ export const ThemeToggle: React.FC = () => {
             aria-checked={isActive}
             onClick={() => setTheme(value)}
             title={`${label} Mode`}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-150 cursor-pointer ${
               isActive
-                ? 'bg-[#25252d] text-[#00d2fd] shadow-md border border-white/10 font-space font-bold'
-                : 'text-[#acaab1] hover:text-[#f9f5fd]'
+                ? 'bg-white/10 text-cyan-400 shadow-sm border border-white/10 font-semibold'
+                : 'text-neutral-400 hover:text-white'
             }`}
           >
             <Icon className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden md:inline text-[11px] space-label">{label}</span>
+            <span className="hidden md:inline text-[11px]">{label}</span>
           </button>
         );
       })}
