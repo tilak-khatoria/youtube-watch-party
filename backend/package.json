@@ -2,10 +2,11 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "YouTube Watch Party Backend",
-  "main": "dist/server.js",
+  "main": "dist/src/server.js",
   "scripts": {
+    "prebuild": "npm install --include=dev",
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "dev": "nodemon --watch src --exec ts-node src/server.ts"
   },
   "keywords": [
@@ -27,7 +28,6 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.1",
-    "@types/socket.io-client": "^1.4.36",
     "nodemon": "^3.1.14",
     "socket.io-client": "^4.8.3",
     "ts-node": "^10.9.2",
