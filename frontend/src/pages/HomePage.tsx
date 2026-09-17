@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
-import { normalizeRoomId } from '../utils/youtube';
+import { extractYouTubeVideoId, normalizeRoomId } from '../utils/youtube';
 import {
   PlusCircle,
   LogIn,
@@ -44,6 +44,13 @@ export const HomePage: React.FC = () => {
     const rawId = customRoomId.trim() || generateRandomCode();
     const roomId = normalizeRoomId(rawId);
 
+    // Safely extract YouTube video ID if URL or ID provided, fallback to default
+    let cleanVideoId = 'dQw4w9WgXcQ';
+    if (initialVideoUrl.trim()) {
+      const extracted = extractYouTubeVideoId(initialVideoUrl.trim());
+      cleanVideoId = extracted || initialVideoUrl.trim();
+    }
+
     // Store preferred username, role, and creator identity for persistence across refresh
     localStorage.setItem('syncparty_username', username);
     localStorage.setItem(`syncparty_room_${roomId}_role`, 'Host');
@@ -52,7 +59,8 @@ export const HomePage: React.FC = () => {
     navigate(`/room/${roomId}`, {
       state: {
         username,
-        initialVideoId: initialVideoUrl.trim() || undefined,
+        videoId: cleanVideoId,
+        initialVideoId: cleanVideoId,
         isCreator: true,
       },
     });

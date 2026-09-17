@@ -35,23 +35,26 @@ export const ParticipantList: React.FC<ParticipantListProps> = ({
 
   const isCurrentUserHost = currentUserRole === 'Host';
 
-  const filteredParticipants = participants.filter((p) =>
-    p.username.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredParticipants = (participants || []).filter((p) =>
+    p?.username?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleToggleModerator = (participant: ParticipantData) => {
-    const newRole = participant.role === 'Moderator' ? 'Participant' : 'Moderator';
+    if (!participant?.id) return;
+    const newRole = participant?.role === 'Moderator' ? 'Participant' : 'Moderator';
     onAssignRole(participant.id, newRole);
     setActiveMenuId(null);
   };
 
   const handleTransferHost = (userId: string) => {
+    if (!userId) return;
     onAssignRole(userId, 'Host');
     setConfirmHostTransferId(null);
     setActiveMenuId(null);
   };
 
   const handleKick = (userId: string) => {
+    if (!userId) return;
     onRemoveParticipant(userId);
     setActiveMenuId(null);
   };
@@ -64,7 +67,7 @@ export const ParticipantList: React.FC<ParticipantListProps> = ({
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-sm text-white">Participants</h3>
             <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono font-semibold">
-              {participants.length}
+              {(participants || []).length}
             </span>
           </div>
           {isCurrentUserHost && (
@@ -93,13 +96,15 @@ export const ParticipantList: React.FC<ParticipantListProps> = ({
           <div className="text-center py-8 text-slate-500 text-xs">No participants found</div>
         ) : (
           filteredParticipants.map((p) => {
-            const isSelf = p.id === currentUserId;
-            const isHost = p.role === 'Host';
-            const isMod = p.role === 'Moderator';
+            const isSelf = p?.id === currentUserId;
+            const isHost = p?.role === 'Host';
+            const isMod = p?.role === 'Moderator';
+            const initialLetter = p?.username?.charAt(0)?.toUpperCase() || '?';
+            const displayName = p?.username || 'Guest';
 
             return (
               <div
-                key={p.id}
+                key={p?.id || Math.random().toString()}
                 className={`relative group flex items-center justify-between p-2.5 rounded-xl border transition-all ${
                   isSelf
                     ? 'bg-indigo-950/20 border-indigo-500/30'
@@ -117,13 +122,13 @@ export const ParticipantList: React.FC<ParticipantListProps> = ({
                         : 'bg-slate-800 text-slate-300'
                     }`}
                   >
-                    {p.username.charAt(0).toUpperCase()}
+                    {initialLetter}
                   </div>
 
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <p className="text-xs font-semibold text-white truncate max-w-[120px]">
-                        {p.username}
+                        {displayName}
                       </p>
                       {isSelf && (
                         <span className="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.2 rounded">
@@ -154,7 +159,7 @@ export const ParticipantList: React.FC<ParticipantListProps> = ({
                 </div>
 
                 {/* Host Action Buttons (Only visible to Host and not on self) */}
-                {isCurrentUserHost && !isSelf && (
+                {isCurrentUserHost && !isSelf && p?.id && (
                   <div className="flex items-center gap-1">
                     {/* Quick Moderator Toggle */}
                     <button

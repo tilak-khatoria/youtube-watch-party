@@ -16,6 +16,7 @@ import { ParticipantList } from '../components/ParticipantList';
 import { LiveChat } from '../components/LiveChat';
 import { VideoSelectorModal } from '../components/VideoSelectorModal';
 import { ToastContainer } from '../components/Toast';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import {
   Users,
   MessageSquare,
@@ -46,32 +47,42 @@ export const RoomPage: React.FC = () => {
     }
   }, [rawRoomId, canonicalRoomId, navigate, location.state]);
 
-  // Route State passed from Home
-  const stateUsername = location.state?.username;
-  const initialVideoId = location.state?.initialVideoId;
+  // Route State passed from Home (safely retrieved)
+  const routeState = (location.state || {}) as {
+    username?: string;
+    videoId?: string;
+    initialVideoId?: string;
+    isCreator?: boolean;
+  };
 
-  // Stored username check for Direct Link / Refresh
-  const storedUsername = useMemo(() => {
-    return stateUsername || localStorage.getItem('syncparty_username') || '';
-  }, [stateUsername]);
+  const routeUsername = routeState?.username ? String(routeState.username).trim() : '';
+  // Direct link detection: if navigated directly to /room/:roomId where username is undefined
+  const isDirectLink = !routeUsername;
+
+  const rawVideoId = routeState?.videoId || routeState?.initialVideoId;
+  const initialResolvedVideoId = (rawVideoId && typeof rawVideoId === 'string')
+    ? (extractYouTubeVideoId(rawVideoId) || rawVideoId.trim())
+    : 'dQw4w9WgXcQ';
+
+  // State Management: username & direct link fallback
+  const [username, setUsername] = useState<string>(routeUsername);
+  const [isDirectLinkFallback, setIsDirectLinkFallback] = useState<boolean>(isDirectLink);
+  const [directNameInput, setDirectNameInput] = useState<string>(
+    localStorage.getItem('syncparty_username') || ''
+  );
+  const [directNameError, setDirectNameError] = useState<string>('');
 
   // Check if current client was recorded as creator / Host for this room
   const isStoredHost = useMemo(() => {
-    if (location.state?.isCreator) return true;
+    if (routeState?.isCreator) return true;
     const storedRole = localStorage.getItem(`syncparty_room_${canonicalRoomId}_role`);
     if (storedRole === 'Host') return true;
     const storedCreator = localStorage.getItem(`syncparty_room_${canonicalRoomId}_creator`);
-    if (storedCreator && storedUsername && storedCreator.toLowerCase() === storedUsername.toLowerCase()) {
+    if (storedCreator && username && storedCreator.toLowerCase() === username.toLowerCase()) {
       return true;
     }
     return false;
-  }, [location.state?.isCreator, canonicalRoomId, storedUsername]);
-
-  // Prompt state for fallback username modal
-  const [username, setUsername] = useState<string>(storedUsername);
-  const [isNamePromptOpen, setIsNamePromptOpen] = useState<boolean>(!storedUsername);
-  const [nameInput, setNameInput] = useState<string>('');
-  const [nameError, setNameError] = useState<string>('');
+  }, [routeState?.isCreator, canonicalRoomId, username]);
 
   // Local User & Role State (Correctly initialized as Host if stored/creator)
   const [currentUserId, setCurrentUserId] = useState<string>('');
@@ -79,10 +90,10 @@ export const RoomPage: React.FC = () => {
     isStoredHost ? 'Host' : 'Participant'
   );
 
-  // Room & Video State
+  // Room & Video State (Never undefined)
   const [participants, setParticipants] = useState<ParticipantData[]>([]);
   const [videoState, setVideoState] = useState<VideoState>({
-    videoId: initialVideoId || 'dQw4w9WgXcQ',
+    videoId: initialResolvedVideoId || 'dQw4w9WgXcQ',
     currentTime: 0,
     playState: 'paused',
     lastUpdated: Date.now(),
@@ -98,7 +109,7 @@ export const RoomPage: React.FC = () => {
   const [isVideoModalOpen, setIsVideoModalOpen] = useState<boolean>(false);
   const [isCopied, setIsCopied] = useState<boolean>(false);
 
-  // Helper to add toast notifications
+  // Helper to add toast notifications safely
   const addToast = useCallback((type: 'info' | 'success' | 'warning' | 'error', message: string) => {
     const newToast: NotificationToast = {
       id: `toast_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
@@ -106,21 +117,22 @@ export const RoomPage: React.FC = () => {
       message,
       timestamp: Date.now(),
     };
-    setToasts((prev) => [...prev.slice(-4), newToast]);
+    setToasts((prev) => [...(prev || []).slice(-4), newToast]);
 
     // Auto dismiss after 4.5s
     setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== newToast.id));
+      setToasts((prev) => (prev || []).filter((t) => t?.id !== newToast.id));
     }, 4500);
   }, []);
 
   const handleDismissToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+    setToasts((prev) => (prev || []).filter((t) => t?.id !== id));
   };
 
-  // Socket Connection and Event Listeners (Activated once username is available)
+  // Socket Connection and Event Listeners
+  // DIRECT LINK FALLBACK: DO NOT connect to socket if isDirectLinkFallback is true or username is empty
   useEffect(() => {
-    if (!canonicalRoomId || isNamePromptOpen || !username) {
+    if (isDirectLinkFallback || !username || !canonicalRoomId) {
       return;
     }
 
@@ -154,63 +166,76 @@ export const RoomPage: React.FC = () => {
     // 2. Room Joined confirmation (Backend verifies and assigns canonical role)
     socket.on('room_joined', (data: { roomId: string; participant: ParticipantData; room: RoomData }) => {
       console.log('[Room Joined]:', data);
-      setCurrentUserId(data.participant.id);
-      setCurrentUserRole(data.participant.role);
-      localStorage.setItem(`syncparty_room_${data.roomId}_role`, data.participant.role);
-      if (data.participant.role === 'Host') {
-        localStorage.setItem(`syncparty_room_${data.roomId}_creator`, data.participant.username);
+      if (data?.participant?.id) {
+        setCurrentUserId(data.participant.id);
       }
-      setParticipants(data.room.participants);
-      if (data.room.videoState) {
-        setVideoState(data.room.videoState);
+      if (data?.participant?.role) {
+        setCurrentUserRole(data.participant.role);
+        localStorage.setItem(`syncparty_room_${data?.roomId || canonicalRoomId}_role`, data.participant.role);
+        if (data.participant.role === 'Host' && data?.participant?.username) {
+          localStorage.setItem(`syncparty_room_${data?.roomId || canonicalRoomId}_creator`, data.participant.username);
+        }
       }
-      addToast('success', `Joined room ${data.roomId} as ${data.participant.role}`);
+      if (data?.room?.participants) {
+        setParticipants(data.room.participants);
+      }
+      if (data?.room?.videoState?.videoId) {
+        setVideoState({
+          videoId: data.room.videoState.videoId,
+          currentTime: data.room.videoState.currentTime || 0,
+          playState: data.room.videoState.playState || 'paused',
+          lastUpdated: data.room.videoState.lastUpdated || Date.now(),
+        });
+      }
+      addToast('success', `Joined room ${data?.roomId || canonicalRoomId} as ${data?.participant?.role || 'Participant'}`);
     });
 
     // 3. Participants Update
     socket.on('participants_updated', (data: { participants: ParticipantData[]; hostId: string }) => {
-      setParticipants(data.participants);
-
-      // Update current user role if updated
-      const self = data.participants.find((p) => p.id === socket.id);
-      if (self) {
-        setCurrentUserRole(self.role);
-        localStorage.setItem(`syncparty_room_${canonicalRoomId}_role`, self.role);
-        if (self.role === 'Host') {
-          localStorage.setItem(`syncparty_room_${canonicalRoomId}_creator`, self.username);
+      if (data?.participants) {
+        setParticipants(data.participants);
+        const self = data.participants.find((p) => p?.id === socket.id);
+        if (self?.role) {
+          setCurrentUserRole(self.role);
+          localStorage.setItem(`syncparty_room_${canonicalRoomId}_role`, self.role);
+          if (self.role === 'Host' && self?.username) {
+            localStorage.setItem(`syncparty_room_${canonicalRoomId}_creator`, self.username);
+          }
         }
       }
     });
 
     // 4. User Joined Notification
     socket.on('user_joined', (data: { participant: ParticipantData; message: string }) => {
-      addToast('info', data.message || `${data.participant.username} joined.`);
+      addToast('info', data?.message || `${data?.participant?.username || 'Someone'} joined.`);
     });
 
     // 5. User Left Notification
     socket.on('user_left', (data: { participant: ParticipantData; message: string }) => {
-      addToast('info', data.message || `${data.participant.username} left.`);
+      addToast('info', data?.message || `${data?.participant?.username || 'Someone'} left.`);
     });
 
     // 6. Video State Sync Listeners
     socket.on('sync_state', (data: VideoState & { triggeredBy?: ParticipantData }) => {
-      setVideoState({
-        videoId: data.videoId,
-        currentTime: data.currentTime,
-        playState: data.playState,
-        lastUpdated: data.lastUpdated || Date.now(),
-      });
+      if (data?.videoId) {
+        setVideoState({
+          videoId: data.videoId,
+          currentTime: data.currentTime || 0,
+          playState: data.playState || 'paused',
+          lastUpdated: data.lastUpdated || Date.now(),
+        });
+      }
     });
 
     socket.on('play', (data: VideoState & { triggeredBy?: ParticipantData }) => {
       setVideoState((prev) => ({
         ...prev,
         playState: 'playing',
-        currentTime: data.currentTime,
-        lastUpdated: data.lastUpdated || Date.now(),
+        currentTime: typeof data?.currentTime === 'number' ? data.currentTime : prev?.currentTime || 0,
+        lastUpdated: data?.lastUpdated || Date.now(),
       }));
-      if (data.triggeredBy && data.triggeredBy.id !== socket.id) {
-        addToast('info', `▶️ ${data.triggeredBy.username} played video`);
+      if (data?.triggeredBy && data.triggeredBy.id !== socket.id) {
+        addToast('info', `▶️ ${data?.triggeredBy?.username || 'User'} played video`);
       }
     });
 
@@ -218,77 +243,78 @@ export const RoomPage: React.FC = () => {
       setVideoState((prev) => ({
         ...prev,
         playState: 'paused',
-        currentTime: data.currentTime,
-        lastUpdated: data.lastUpdated || Date.now(),
+        currentTime: typeof data?.currentTime === 'number' ? data.currentTime : prev?.currentTime || 0,
+        lastUpdated: data?.lastUpdated || Date.now(),
       }));
-      if (data.triggeredBy && data.triggeredBy.id !== socket.id) {
-        addToast('info', `⏸️ ${data.triggeredBy.username} paused video`);
+      if (data?.triggeredBy && data.triggeredBy.id !== socket.id) {
+        addToast('info', `⏸️ ${data?.triggeredBy?.username || 'User'} paused video`);
       }
     });
 
     socket.on('seek', (data: VideoState & { triggeredBy?: ParticipantData }) => {
       setVideoState((prev) => ({
         ...prev,
-        currentTime: data.currentTime,
-        lastUpdated: data.lastUpdated || Date.now(),
+        currentTime: typeof data?.currentTime === 'number' ? data.currentTime : prev?.currentTime || 0,
+        lastUpdated: data?.lastUpdated || Date.now(),
       }));
     });
 
     socket.on('video_changed', (data: { videoId: string; changedBy?: ParticipantData; room?: RoomData }) => {
-      setVideoState({
-        videoId: data.videoId,
-        currentTime: 0,
-        playState: 'playing',
-        lastUpdated: Date.now(),
-      });
-      addToast('info', `🎬 Video changed by ${data.changedBy?.username || 'Host'}`);
+      if (data?.videoId) {
+        setVideoState({
+          videoId: data.videoId,
+          currentTime: 0,
+          playState: 'playing',
+          lastUpdated: Date.now(),
+        });
+        addToast('info', `🎬 Video changed by ${data?.changedBy?.username || 'Host'}`);
+      }
     });
 
     // 7. Role Assigned Notification
     socket.on('role_assigned', (data: any) => {
-      if (data.userId === socket.id) {
+      if (data?.userId === socket.id && data?.role) {
         setCurrentUserRole(data.role);
-        addToast(
-          'success',
-          `👑 You were assigned the role of ${data.role}!`
-        );
+        addToast('success', `👑 You were assigned the role of ${data.role}!`);
       } else {
-        addToast('info', data.message || `${data.username} is now ${data.role}.`);
+        addToast('info', data?.message || `${data?.username || 'User'} is now ${data?.role || 'Participant'}.`);
       }
     });
 
     // 8. Host Changed
     socket.on('host_changed', (data: any) => {
-      if (data.newHostId === socket.id) {
+      if (data?.newHostId === socket.id) {
         setCurrentUserRole('Host');
         addToast('success', '👑 You are now the Room Host!');
       } else {
-        addToast('warning', data.message || `Host transferred to ${data.newHost?.username}`);
+        addToast('warning', data?.message || `Host transferred to ${data?.newHost?.username || 'new host'}`);
       }
     });
 
     // 9. Participant Removed / Kicked
     socket.on('participant_removed', (data: any) => {
-      addToast('warning', data.message || `${data.username} was removed from the room.`);
+      addToast('warning', data?.message || `${data?.username || 'User'} was removed from the room.`);
     });
 
     socket.on('kicked_from_room', (data: any) => {
-      alert(data.message || 'You have been removed from the watch party by the Host.');
+      alert(data?.message || 'You have been removed from the watch party by the Host.');
       navigate('/');
     });
 
     // 10. Action Rejection / Error messages
     socket.on('action_rejected', (data: { action: string; message: string; requiredRoles?: string[] }) => {
-      addToast('error', `🚫 ${data.message}`);
+      addToast('error', `🚫 ${data?.message || 'Action rejected'}`);
     });
 
     socket.on('error_message', (data: { message: string }) => {
-      addToast('error', data.message);
+      addToast('error', data?.message || 'An error occurred');
     });
 
     // 11. Live Chat
     socket.on('receive_message', (message: ChatMessage) => {
-      setChatMessages((prev) => [...prev, message]);
+      if (message?.id) {
+        setChatMessages((prev) => [...(prev || []), message]);
+      }
     });
 
     return () => {
@@ -310,7 +336,7 @@ export const RoomPage: React.FC = () => {
       socket.off('error_message');
       socket.off('receive_message');
     };
-  }, [canonicalRoomId, username, isNamePromptOpen, navigate, addToast]);
+  }, [canonicalRoomId, username, isDirectLinkFallback, isStoredHost, navigate, addToast]);
 
   // RBAC Permission Resolution:
   // Host & Moderator: Play, pause, seek, change video, control party
@@ -322,11 +348,11 @@ export const RoomPage: React.FC = () => {
   const canControl = isHostOrModerator;
 
   // Handle Display Name Form Submission (Fallback for direct links / refreshes)
-  const handleNamePromptSubmit = (e: React.FormEvent) => {
+  const handleDirectJoinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = nameInput.trim();
+    const trimmed = directNameInput.trim();
     if (!trimmed) {
-      setNameError('Please enter a display name to join the party.');
+      setDirectNameError('Please enter a display name to join the party.');
       return;
     }
 
@@ -338,10 +364,10 @@ export const RoomPage: React.FC = () => {
       localStorage.setItem(`syncparty_room_${canonicalRoomId}_role`, 'Host');
     }
     setUsername(trimmed);
-    setIsNamePromptOpen(false);
+    setIsDirectLinkFallback(false);
   };
 
-  // Sockets Emitters (Strictly gated to Host and Moderator)
+  // Socket Emitters (Strictly gated to Host and Moderator)
   const handlePlay = (time: number) => {
     if (!canControl) return;
     const socket = getSocket();
@@ -365,8 +391,9 @@ export const RoomPage: React.FC = () => {
       addToast('error', 'Only Host and Moderators can change the video.');
       return;
     }
+    const cleanId = extractYouTubeVideoId(newVideoId) || newVideoId;
     const socket = getSocket();
-    socket.emit('change_video', { roomId: canonicalRoomId, videoId: newVideoId });
+    socket.emit('change_video', { roomId: canonicalRoomId, videoId: cleanId });
   };
 
   const handleInlineUrlSubmit = (e: React.FormEvent) => {
@@ -412,8 +439,9 @@ export const RoomPage: React.FC = () => {
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  // Fallback Modal for Direct Link Joins / Refreshes without name
-  if (isNamePromptOpen) {
+  // DIRECT LINK FALLBACK: Clean, centered UI form asking for Display Name and click 'Join'.
+  // DO NOT render video player or connect to socket in this state.
+  if (isDirectLinkFallback) {
     return (
       <div className="min-h-screen flex flex-col bg-[#090a10] text-slate-100">
         <Navbar />
@@ -434,23 +462,25 @@ export const RoomPage: React.FC = () => {
               </div>
             </div>
 
-            <form onSubmit={handleNamePromptSubmit} className="space-y-4 relative z-10">
+            <form onSubmit={handleDirectJoinSubmit} className="space-y-4 relative z-10">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-2">
-                  Enter Your Display Name
+                  Enter Your Display Name <span className="text-rose-400">*</span>
                 </label>
                 <input
                   type="text"
                   autoFocus
                   placeholder="e.g. Alex, Sam, Taylor..."
-                  value={nameInput}
+                  value={directNameInput}
                   onChange={(e) => {
-                    setNameInput(e.target.value);
-                    setNameError('');
+                    setDirectNameInput(e.target.value);
+                    setDirectNameError('');
                   }}
                   className="w-full bg-slate-900/90 border border-white/10 focus:border-rose-500 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-500/25 transition-all"
                 />
-                {nameError && <p className="text-xs text-rose-400 mt-1.5 font-medium">{nameError}</p>}
+                {directNameError && (
+                  <p className="text-xs text-rose-400 mt-1.5 font-medium">{directNameError}</p>
+                )}
               </div>
 
               <button
@@ -458,7 +488,7 @@ export const RoomPage: React.FC = () => {
                 className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-rose-600/30 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 <LogIn className="w-4 h-4" />
-                <span>Join Watch Party</span>
+                <span>Join</span>
               </button>
             </form>
           </div>
@@ -468,186 +498,195 @@ export const RoomPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#08090f] text-slate-100">
-      <Navbar
-        roomId={canonicalRoomId}
-        username={username}
-        role={currentUserRole}
-        onLeaveRoom={handleLeaveRoom}
-      />
+    <ErrorBoundary fallbackTitle="Watch Room Encountered an Issue">
+      <div className="min-h-screen flex flex-col bg-[#08090f] text-slate-100">
+        <Navbar
+          roomId={canonicalRoomId}
+          username={username}
+          role={currentUserRole}
+          onLeaveRoom={handleLeaveRoom}
+        />
 
-      {/* Main Party Room Workspace */}
-      <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-5 lg:p-6 flex flex-col lg:flex-row gap-5">
-        {/* Left / Center: YouTube Video Player Area */}
-        <section className="flex-1 flex flex-col min-w-0">
-          {/* Top Banner with Room info & Copy Share */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-3 px-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-400">Current Room:</span>
-              <span className="text-xs font-mono font-bold text-white bg-slate-900 border border-white/10 px-2.5 py-1 rounded-lg">
-                {canonicalRoomId}
-              </span>
-              <button
-                onClick={handleCopyInviteLink}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition-all hover:scale-105"
-              >
-                {isCopied ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Share2 className="w-3.5 h-3.5" />
-                    <span>Share Link</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Role Notice Indicator */}
-            <div className="flex items-center gap-2">
-              {isHost && (
-                <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full">
-                  <Crown className="w-3.5 h-3.5" /> You are the Host
-                </span>
-              )}
-              {isModerator && (
-                <span className="flex items-center gap-1.5 text-xs font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-3 py-1 rounded-full">
-                  <Shield className="w-3.5 h-3.5" /> Moderator Controls Enabled
-                </span>
-              )}
-              {isParticipantOrViewer && (
-                <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400 bg-slate-900 border border-white/10 px-3 py-1 rounded-full">
-                  <Eye className="w-3.5 h-3.5 text-slate-500" /> Watch Only Mode (Controls Locked)
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* YouTube Video URL Input Field: Strictly rendered for Host / Moderator */}
-          {isHostOrModerator ? (
-            <form
-              onSubmit={handleInlineUrlSubmit}
-              className="mb-3 p-2 rounded-2xl glass-panel border border-white/10 flex items-center gap-2 shadow-sm"
-            >
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  placeholder="Paste YouTube URL or Video ID to change video for everyone..."
-                  value={inlineVideoUrl}
-                  onChange={(e) => setInlineVideoUrl(e.target.value)}
-                  className="w-full bg-slate-950/90 border border-white/10 rounded-xl px-4 py-2 pl-9 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 transition-all font-mono"
-                />
-                <PlaySquare className="w-4 h-4 text-rose-500 absolute left-3 top-2.5" />
-              </div>
-
-              <button
-                type="submit"
-                disabled={!inlineVideoUrl.trim()}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold shadow-md shadow-rose-600/20 transition-all hover:scale-105 shrink-0 flex items-center gap-1.5"
-              >
-                <span>Change Video</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsVideoModalOpen(true)}
-                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 text-xs font-semibold transition-all hover:scale-105 shrink-0 flex items-center gap-1"
-                title="Browse video presets"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden sm:inline">Presets</span>
-              </button>
-            </form>
-          ) : (
-            /* Informative status bar for Participants / Viewers */
-            <div className="mb-3 px-4 py-2.5 rounded-2xl glass-panel border border-white/5 flex items-center justify-between text-xs text-slate-300 shadow-sm">
+        {/* Main Party Room Workspace */}
+        <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-5 lg:p-6 flex flex-col lg:flex-row gap-5">
+          {/* Left / Center: YouTube Video Player Area */}
+          <section className="flex-1 flex flex-col min-w-0">
+            {/* Top Banner with Room info & Copy Share */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-3 px-1">
               <div className="flex items-center gap-2">
-                <Radio className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
-                <span>Watching live with party • Video ID: <code className="text-indigo-300 font-mono font-semibold">{videoState.videoId}</code></span>
+                <span className="text-xs font-semibold text-slate-400">Current Room:</span>
+                <span className="text-xs font-mono font-bold text-white bg-slate-900 border border-white/10 px-2.5 py-1 rounded-lg">
+                  {canonicalRoomId}
+                </span>
+                <button
+                  onClick={handleCopyInviteLink}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition-all hover:scale-105"
+                >
+                  {isCopied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>Share Link</span>
+                    </>
+                  )}
+                </button>
               </div>
-              <span className="text-[11px] text-slate-500 font-medium">Watch Only • Controls managed by Host & Mods</span>
+
+              {/* Role Notice Indicator */}
+              <div className="flex items-center gap-2">
+                {isHost && (
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full">
+                    <Crown className="w-3.5 h-3.5" /> You are the Host
+                  </span>
+                )}
+                {isModerator && (
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-3 py-1 rounded-full">
+                    <Shield className="w-3.5 h-3.5" /> Moderator Controls Enabled
+                  </span>
+                )}
+                {isParticipantOrViewer && (
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400 bg-slate-900 border border-white/10 px-3 py-1 rounded-full">
+                    <Eye className="w-3.5 h-3.5 text-slate-500" /> Watch Only Mode (Controls Locked)
+                  </span>
+                )}
+              </div>
             </div>
-          )}
 
-          {/* YouTube Video Player Component */}
-          <div className="flex-1 w-full min-h-[420px] sm:min-h-[500px]">
-            <YouTubePlayer
-              videoId={videoState.videoId}
-              currentTime={videoState.currentTime}
-              playState={videoState.playState}
-              lastUpdated={videoState.lastUpdated}
-              role={currentUserRole}
-              canControl={isHostOrModerator}
-              onPlay={handlePlay}
-              onPause={handlePause}
-              onSeek={handleSeek}
-              onChangeVideoClick={() => setIsVideoModalOpen(true)}
-            />
-          </div>
-        </section>
+            {/* YouTube Video URL Input Field: Strictly rendered for Host / Moderator */}
+            {isHostOrModerator ? (
+              <form
+                onSubmit={handleInlineUrlSubmit}
+                className="mb-3 p-2 rounded-2xl glass-panel border border-white/10 flex items-center gap-2 shadow-sm"
+              >
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="Paste YouTube URL or Video ID to change video for everyone..."
+                    value={inlineVideoUrl}
+                    onChange={(e) => setInlineVideoUrl(e.target.value)}
+                    className="w-full bg-slate-950/90 border border-white/10 rounded-xl px-4 py-2 pl-9 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 transition-all font-mono"
+                  />
+                  <PlaySquare className="w-4 h-4 text-rose-500 absolute left-3 top-2.5" />
+                </div>
 
-        {/* Right Sidebar: Participants & Live Chat */}
-        <aside className="w-full lg:w-96 flex flex-col glass-panel rounded-2xl border border-white/10 overflow-hidden shadow-2xl h-[580px] lg:h-auto shrink-0">
-          {/* Sidebar Tab Header */}
-          <div className="flex items-center border-b border-white/10 bg-[#0e1018]">
-            <button
-              onClick={() => setActiveTab('participants')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-xs font-bold transition-all border-b-2 ${
-                activeTab === 'participants'
-                  ? 'border-indigo-500 text-white bg-white/5'
-                  : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5'
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              <span>Participants ({participants.length})</span>
-            </button>
+                <button
+                  type="submit"
+                  disabled={!inlineVideoUrl.trim()}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold shadow-md shadow-rose-600/20 transition-all hover:scale-105 shrink-0 flex items-center gap-1.5"
+                >
+                  <span>Change Video</span>
+                </button>
 
-            <button
-              onClick={() => setActiveTab('chat')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-xs font-bold transition-all border-b-2 ${
-                activeTab === 'chat'
-                  ? 'border-indigo-500 text-white bg-white/5'
-                  : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5'
-              }`}
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span>Live Chat ({chatMessages.length})</span>
-            </button>
-          </div>
-
-          {/* Tab Content */}
-          <div className="flex-1 min-h-0 overflow-hidden">
-            {activeTab === 'participants' ? (
-              <ParticipantList
-                participants={participants}
-                currentUserId={currentUserId}
-                currentUserRole={currentUserRole}
-                onAssignRole={handleAssignRole}
-                onRemoveParticipant={handleRemoveParticipant}
-              />
+                <button
+                  type="button"
+                  onClick={() => setIsVideoModalOpen(true)}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 text-xs font-semibold transition-all hover:scale-105 shrink-0 flex items-center gap-1"
+                  title="Browse video presets"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden sm:inline">Presets</span>
+                </button>
+              </form>
             ) : (
-              <LiveChat
-                messages={chatMessages}
-                currentUserId={currentUserId}
-                onSendMessage={handleSendMessage}
-              />
+              /* Informative status bar for Participants / Viewers */
+              <div className="mb-3 px-4 py-2.5 rounded-2xl glass-panel border border-white/5 flex items-center justify-between text-xs text-slate-300 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <Radio className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
+                  <span>
+                    Watching live with party • Video ID:{' '}
+                    <code className="text-indigo-300 font-mono font-semibold">
+                      {videoState?.videoId || 'dQw4w9WgXcQ'}
+                    </code>
+                  </span>
+                </div>
+                <span className="text-[11px] text-slate-500 font-medium">
+                  Watch Only • Controls managed by Host & Mods
+                </span>
+              </div>
             )}
-          </div>
-        </aside>
-      </main>
 
-      {/* Video Selector Modal */}
-      <VideoSelectorModal
-        isOpen={isVideoModalOpen}
-        onClose={() => setIsVideoModalOpen(false)}
-        onSelectVideo={handleChangeVideo}
-        currentVideoId={videoState.videoId}
-      />
+            {/* YouTube Video Player Component */}
+            <div className="flex-1 w-full min-h-[420px] sm:min-h-[500px]">
+              <YouTubePlayer
+                videoId={videoState?.videoId || 'dQw4w9WgXcQ'}
+                currentTime={videoState?.currentTime || 0}
+                playState={videoState?.playState || 'paused'}
+                lastUpdated={videoState?.lastUpdated}
+                role={currentUserRole}
+                canControl={isHostOrModerator}
+                onPlay={handlePlay}
+                onPause={handlePause}
+                onSeek={handleSeek}
+                onChangeVideoClick={() => setIsVideoModalOpen(true)}
+              />
+            </div>
+          </section>
 
-      {/* Floating Notifications */}
-      <ToastContainer toasts={toasts} onDismiss={handleDismissToast} />
-    </div>
+          {/* Right Sidebar: Participants & Live Chat */}
+          <aside className="w-full lg:w-96 flex flex-col glass-panel rounded-2xl border border-white/10 overflow-hidden shadow-2xl h-[580px] lg:h-auto shrink-0">
+            {/* Sidebar Tab Header */}
+            <div className="flex items-center border-b border-white/10 bg-[#0e1018]">
+              <button
+                onClick={() => setActiveTab('participants')}
+                className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-xs font-bold transition-all border-b-2 ${
+                  activeTab === 'participants'
+                    ? 'border-indigo-500 text-white bg-white/5'
+                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                <span>Participants ({(participants || []).length})</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('chat')}
+                className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-xs font-bold transition-all border-b-2 ${
+                  activeTab === 'chat'
+                    ? 'border-indigo-500 text-white bg-white/5'
+                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                }`}
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>Live Chat ({(chatMessages || []).length})</span>
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {activeTab === 'participants' ? (
+                <ParticipantList
+                  participants={participants || []}
+                  currentUserId={currentUserId}
+                  currentUserRole={currentUserRole}
+                  onAssignRole={handleAssignRole}
+                  onRemoveParticipant={handleRemoveParticipant}
+                />
+              ) : (
+                <LiveChat
+                  messages={chatMessages || []}
+                  currentUserId={currentUserId}
+                  onSendMessage={handleSendMessage}
+                />
+              )}
+            </div>
+          </aside>
+        </main>
+
+        {/* Video Selector Modal */}
+        <VideoSelectorModal
+          isOpen={isVideoModalOpen}
+          onClose={() => setIsVideoModalOpen(false)}
+          onSelectVideo={handleChangeVideo}
+          currentVideoId={videoState?.videoId || 'dQw4w9WgXcQ'}
+        />
+
+        {/* Floating Notifications */}
+        <ToastContainer toasts={toasts || []} onDismiss={handleDismissToast} />
+      </div>
+    </ErrorBoundary>
   );
 };

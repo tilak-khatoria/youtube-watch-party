@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import type { VideoPlayState, ParticipantRole } from '../types';
+import { extractYouTubeVideoId } from '../utils/youtube';
 import {
   Play,
   Pause,
@@ -119,70 +120,76 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
       // Re-create the placeholder container element dynamically
       viewportRef.current.innerHTML = '<div id="yt-player-target" style="width:100%;height:100%;position:absolute;inset:0"></div>';
 
-      playerRef.current = new window.YT.Player('yt-player-target', {
-        height: '100%',
-        width: '100%',
-        videoId: videoId || 'dQw4w9WgXcQ',
-        playerVars: {
-          autoplay: 0,
-          controls: 1, // Native YouTube controls enabled; participants are restricted via overlay and pointerEvents
-          modestbranding: 1,
-          rel: 0,
-          fs: 1,
-          playsinline: 1,
-          enablejsapi: 1,
-          origin: window.location.origin,
-        },
-        events: {
-          onReady: (event: any) => {
-            setIsPlayerReady(true);
-            const dur = event.target.getDuration() || 0;
-            setDuration(dur);
+      const safeVideoId = extractYouTubeVideoId(videoId) || videoId || 'dQw4w9WgXcQ';
 
-            // Sync initial room state
-            if (currentTime > 0) {
-              event.target.seekTo(currentTime, true);
-            }
-            if (playState === 'playing') {
-              event.target.playVideo();
-            }
+      try {
+        playerRef.current = new window.YT.Player('yt-player-target', {
+          height: '100%',
+          width: '100%',
+          videoId: safeVideoId,
+          playerVars: {
+            autoplay: 0,
+            controls: 1, // Native YouTube controls enabled; participants are restricted via overlay and pointerEvents
+            modestbranding: 1,
+            rel: 0,
+            fs: 1,
+            playsinline: 1,
+            enablejsapi: 1,
+            origin: window.location.origin,
           },
-          onStateChange: (event: any) => {
-            // YT.PlayerState: -1 = UNSTARTED, 0 = ENDED, 1 = PLAYING, 2 = PAUSED, 3 = BUFFERING, 5 = CUED
-            if (event.data === 3) {
-              setIsBuffering(true);
-            } else {
-              setIsBuffering(false);
-            }
+          events: {
+            onReady: (event: any) => {
+              setIsPlayerReady(true);
+              const dur = event.target.getDuration() || 0;
+              setDuration(dur);
 
-            // Ignore state changes triggered programmatically by socket events
-            if (isProgrammaticUpdate.current) {
-              return;
-            }
-
-            // Only Host and Moderator can control playback and broadcast actions
-            if (!isHostOrModeratorRef.current) {
-              // Participant or Viewer: revert unauthorized state changes immediately
-              if (playState === 'paused' && event.data === 1) {
-                executeProgrammaticUpdate((p) => p.pauseVideo());
-              } else if (playState === 'playing' && event.data === 2) {
-                executeProgrammaticUpdate((p) => p.playVideo());
+              // Sync initial room state
+              if (currentTime > 0) {
+                event.target.seekTo(currentTime, true);
               }
-              return;
-            }
+              if (playState === 'playing') {
+                event.target.playVideo();
+              }
+            },
+            onStateChange: (event: any) => {
+              // YT.PlayerState: -1 = UNSTARTED, 0 = ENDED, 1 = PLAYING, 2 = PAUSED, 3 = BUFFERING, 5 = CUED
+              if (event.data === 3) {
+                setIsBuffering(true);
+              } else {
+                setIsBuffering(false);
+              }
 
-            // Host / Moderator: Emit event to room
-            const cur = event.target.getCurrentTime() || 0;
-            lastRecordedTime.current = cur;
+              // Ignore state changes triggered programmatically by socket events
+              if (isProgrammaticUpdate.current) {
+                return;
+              }
 
-            if (event.data === 1) {
-              onPlay(cur);
-            } else if (event.data === 2) {
-              onPause(cur);
-            }
+              // Only Host and Moderator can control playback and broadcast actions
+              if (!isHostOrModeratorRef.current) {
+                // Participant or Viewer: revert unauthorized state changes immediately
+                if (playState === 'paused' && event.data === 1) {
+                  executeProgrammaticUpdate((p) => p.pauseVideo());
+                } else if (playState === 'playing' && event.data === 2) {
+                  executeProgrammaticUpdate((p) => p.playVideo());
+                }
+                return;
+              }
+
+              // Host / Moderator: Emit event to room
+              const cur = event.target.getCurrentTime() || 0;
+              lastRecordedTime.current = cur;
+
+              if (event.data === 1) {
+                onPlay(cur);
+              } else if (event.data === 2) {
+                onPause(cur);
+              }
+            },
           },
-        },
-      });
+        });
+      } catch (err) {
+        console.error('[YouTubePlayer] Error initializing YT.Player:', err);
+      }
     };
 
     if (window.YT && window.YT.Player) {
@@ -214,11 +221,12 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
     if (!playerRef.current || !isPlayerReady || !videoId) return;
 
     try {
+      const cleanVideoId = extractYouTubeVideoId(videoId) || videoId;
       const currentUrl = playerRef.current.getVideoUrl() || '';
-      if (!currentUrl.includes(videoId)) {
-        console.log(`[YouTube Player API] Loading Video ID: ${videoId}`);
+      if (!currentUrl.includes(cleanVideoId)) {
+        console.log(`[YouTube Player API] Loading Video ID: ${cleanVideoId}`);
         executeProgrammaticUpdate((p) => {
-          p.loadVideoById(videoId, 0);
+          p.loadVideoById(cleanVideoId, 0);
           if (playState === 'playing') {
             p.playVideo();
           } else {

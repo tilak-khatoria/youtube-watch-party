@@ -42,7 +42,7 @@ export const LiveChat: React.FC<LiveChatProps> = ({
     <div className="flex flex-col h-full bg-slate-900/30">
       {/* Messages Feed */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.length === 0 ? (
+        {(messages || []).length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
             <Smile className="w-8 h-8 text-slate-600 mb-2" />
             <p className="text-xs font-medium">No messages yet</p>
@@ -51,20 +51,21 @@ export const LiveChat: React.FC<LiveChatProps> = ({
             </p>
           </div>
         ) : (
-          messages.map((msg) => {
-            const isSelf = msg.senderId === currentUserId;
-            const isHost = msg.role === 'Host';
-            const isMod = msg.role === 'Moderator';
+          (messages || []).map((msg) => {
+            const isSelf = msg?.senderId === currentUserId;
+            const isHost = msg?.role === 'Host';
+            const isMod = msg?.role === 'Moderator';
+            const senderName = msg?.username || 'Guest';
 
             return (
               <div
-                key={msg.id}
+                key={msg?.id || Math.random().toString()}
                 className={`flex flex-col ${isSelf ? 'items-end' : 'items-start'}`}
               >
                 {/* Header info */}
                 <div className="flex items-center gap-1.5 mb-1 px-1">
                   <span className="text-[11px] font-bold text-slate-300">
-                    {msg.username}
+                    {senderName}
                   </span>
 
                   {isHost && (
@@ -84,7 +85,7 @@ export const LiveChat: React.FC<LiveChatProps> = ({
                   )}
 
                   <span className="text-[10px] text-slate-500 font-mono">
-                    {formatTime(msg.timestamp)}
+                    {formatTime(msg?.timestamp || Date.now())}
                   </span>
                 </div>
 
@@ -96,7 +97,7 @@ export const LiveChat: React.FC<LiveChatProps> = ({
                       : 'bg-slate-800/90 text-slate-200 border border-white/5 rounded-tl-none'
                   }`}
                 >
-                  {msg.message}
+                  {msg?.message || ''}
                 </div>
               </div>
             );
