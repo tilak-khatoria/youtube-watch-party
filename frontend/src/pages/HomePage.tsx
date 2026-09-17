@@ -44,8 +44,10 @@ export const HomePage: React.FC = () => {
     const rawId = customRoomId.trim() || generateRandomCode();
     const roomId = normalizeRoomId(rawId);
 
-    // Store preferred username in localStorage for persistence
+    // Store preferred username, role, and creator identity for persistence across refresh
     localStorage.setItem('syncparty_username', username);
+    localStorage.setItem(`syncparty_room_${roomId}_role`, 'Host');
+    localStorage.setItem(`syncparty_room_${roomId}_creator`, username);
 
     navigate(`/room/${roomId}`, {
       state: {
@@ -69,11 +71,16 @@ export const HomePage: React.FC = () => {
 
     const username = joinUsername.trim() || `Viewer_${Math.floor(1000 + Math.random() * 9000)}`;
     localStorage.setItem('syncparty_username', username);
+    const existingCreator = localStorage.getItem(`syncparty_room_${cleanRoomId}_creator`);
+    const isReturningHost = Boolean(existingCreator && existingCreator.toLowerCase() === username.toLowerCase());
+    if (!isReturningHost) {
+      localStorage.setItem(`syncparty_room_${cleanRoomId}_role`, 'Participant');
+    }
 
     navigate(`/room/${cleanRoomId}`, {
       state: {
         username,
-        isCreator: false,
+        isCreator: isReturningHost,
       },
     });
   };

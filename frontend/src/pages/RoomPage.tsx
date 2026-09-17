@@ -55,15 +55,29 @@ export const RoomPage: React.FC = () => {
     return stateUsername || localStorage.getItem('syncparty_username') || '';
   }, [stateUsername]);
 
+  // Check if current client was recorded as creator / Host for this room
+  const isStoredHost = useMemo(() => {
+    if (location.state?.isCreator) return true;
+    const storedRole = localStorage.getItem(`syncparty_room_${canonicalRoomId}_role`);
+    if (storedRole === 'Host') return true;
+    const storedCreator = localStorage.getItem(`syncparty_room_${canonicalRoomId}_creator`);
+    if (storedCreator && storedUsername && storedCreator.toLowerCase() === storedUsername.toLowerCase()) {
+      return true;
+    }
+    return false;
+  }, [location.state?.isCreator, canonicalRoomId, storedUsername]);
+
   // Prompt state for fallback username modal
   const [username, setUsername] = useState<string>(storedUsername);
   const [isNamePromptOpen, setIsNamePromptOpen] = useState<boolean>(!storedUsername);
   const [nameInput, setNameInput] = useState<string>('');
   const [nameError, setNameError] = useState<string>('');
 
-  // Local User & Role State
+  // Local User & Role State (Correctly initialized as Host if stored/creator)
   const [currentUserId, setCurrentUserId] = useState<string>('');
-  const [currentUserRole, setCurrentUserRole] = useState<ParticipantRole>('Participant');
+  const [currentUserRole, setCurrentUserRole] = useState<ParticipantRole>(
+    isStoredHost ? 'Host' : 'Participant'
+  );
 
   // Room & Video State
   const [participants, setParticipants] = useState<ParticipantData[]>([]);
@@ -117,10 +131,12 @@ export const RoomPage: React.FC = () => {
       console.log('[Socket Connected]:', socket.id);
       setCurrentUserId(socket.id || '');
 
-      // Join the canonical room
+      // Join the canonical room with verified role request if Host
       socket.emit('join_room', {
         roomId: canonicalRoomId,
         username,
+        role: isStoredHost ? 'Host' : undefined,
+        isCreator: isStoredHost,
       });
     });
 
@@ -130,14 +146,20 @@ export const RoomPage: React.FC = () => {
       socket.emit('join_room', {
         roomId: canonicalRoomId,
         username,
+        role: isStoredHost ? 'Host' : undefined,
+        isCreator: isStoredHost,
       });
     }
 
-    // 2. Room Joined confirmation
+    // 2. Room Joined confirmation (Backend verifies and assigns canonical role)
     socket.on('room_joined', (data: { roomId: string; participant: ParticipantData; room: RoomData }) => {
       console.log('[Room Joined]:', data);
       setCurrentUserId(data.participant.id);
       setCurrentUserRole(data.participant.role);
+      localStorage.setItem(`syncparty_room_${data.roomId}_role`, data.participant.role);
+      if (data.participant.role === 'Host') {
+        localStorage.setItem(`syncparty_room_${data.roomId}_creator`, data.participant.username);
+      }
       setParticipants(data.room.participants);
       if (data.room.videoState) {
         setVideoState(data.room.videoState);
@@ -153,6 +175,10 @@ export const RoomPage: React.FC = () => {
       const self = data.participants.find((p) => p.id === socket.id);
       if (self) {
         setCurrentUserRole(self.role);
+        localStorage.setItem(`syncparty_room_${canonicalRoomId}_role`, self.role);
+        if (self.role === 'Host') {
+          localStorage.setItem(`syncparty_room_${canonicalRoomId}_creator`, self.username);
+        }
       }
     });
 
@@ -286,9 +312,14 @@ export const RoomPage: React.FC = () => {
     };
   }, [canonicalRoomId, username, isNamePromptOpen, navigate, addToast]);
 
-  // RBAC Permission Check: Can current user control playback / change video?
-  // Strictly restricted to Host and Moderator
-  const canControl = currentUserRole === 'Host' || currentUserRole === 'Moderator';
+  // RBAC Permission Resolution:
+  // Host & Moderator: Play, pause, seek, change video, control party
+  // Participant & Viewer: Watch only, restricted playback controls
+  const isHost = currentUserRole === 'Host';
+  const isModerator = currentUserRole === 'Moderator';
+  const isHostOrModerator = isHost || isModerator;
+  const isParticipantOrViewer = currentUserRole === 'Participant' || currentUserRole === 'Viewer';
+  const canControl = isHostOrModerator;
 
   // Handle Display Name Form Submission (Fallback for direct links / refreshes)
   const handleNamePromptSubmit = (e: React.FormEvent) => {
@@ -300,11 +331,17 @@ export const RoomPage: React.FC = () => {
     }
 
     localStorage.setItem('syncparty_username', trimmed);
+    const storedCreator = localStorage.getItem(`syncparty_room_${canonicalRoomId}_creator`);
+    const isHostName = Boolean(storedCreator && storedCreator.toLowerCase() === trimmed.toLowerCase());
+    if (isHostName) {
+      setCurrentUserRole('Host');
+      localStorage.setItem(`syncparty_room_${canonicalRoomId}_role`, 'Host');
+    }
     setUsername(trimmed);
     setIsNamePromptOpen(false);
   };
 
-  // Sockets Emitters (Strictly gated by canControl)
+  // Sockets Emitters (Strictly gated to Host and Moderator)
   const handlePlay = (time: number) => {
     if (!canControl) return;
     const socket = getSocket();
@@ -470,17 +507,17 @@ export const RoomPage: React.FC = () => {
 
             {/* Role Notice Indicator */}
             <div className="flex items-center gap-2">
-              {currentUserRole === 'Host' && (
+              {isHost && (
                 <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full">
                   <Crown className="w-3.5 h-3.5" /> You are the Host
                 </span>
               )}
-              {currentUserRole === 'Moderator' && (
+              {isModerator && (
                 <span className="flex items-center gap-1.5 text-xs font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-3 py-1 rounded-full">
                   <Shield className="w-3.5 h-3.5" /> Moderator Controls Enabled
                 </span>
               )}
-              {(currentUserRole === 'Participant' || currentUserRole === 'Viewer') && (
+              {isParticipantOrViewer && (
                 <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400 bg-slate-900 border border-white/10 px-3 py-1 rounded-full">
                   <Eye className="w-3.5 h-3.5 text-slate-500" /> Watch Only Mode (Controls Locked)
                 </span>
@@ -489,7 +526,7 @@ export const RoomPage: React.FC = () => {
           </div>
 
           {/* YouTube Video URL Input Field: Strictly rendered for Host / Moderator */}
-          {canControl ? (
+          {isHostOrModerator ? (
             <form
               onSubmit={handleInlineUrlSubmit}
               className="mb-3 p-2 rounded-2xl glass-panel border border-white/10 flex items-center gap-2 shadow-sm"
@@ -541,7 +578,8 @@ export const RoomPage: React.FC = () => {
               currentTime={videoState.currentTime}
               playState={videoState.playState}
               lastUpdated={videoState.lastUpdated}
-              canControl={canControl}
+              role={currentUserRole}
+              canControl={isHostOrModerator}
               onPlay={handlePlay}
               onPause={handlePause}
               onSeek={handleSeek}

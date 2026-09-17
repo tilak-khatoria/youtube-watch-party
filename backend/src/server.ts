@@ -172,7 +172,7 @@ io.on('connection', (socket: Socket) => {
    */
   socket.on('join_room', (payload: JoinRoomPayload) => {
     try {
-      const { roomId, username } = payload || {};
+      const { roomId, username, role, isCreator } = payload || {};
       if (!roomId || typeof roomId !== 'string') {
         socket.emit('error_message', { message: 'Invalid or missing roomId' });
         return;
@@ -188,7 +188,9 @@ io.on('connection', (socket: Socket) => {
       const { room, participant, isNewRoom } = roomManager.joinRoom(
         cleanRoomId,
         socket.id,
-        cleanUsername
+        cleanUsername,
+        role,
+        isCreator
       );
 
       // Join Socket.IO room channel

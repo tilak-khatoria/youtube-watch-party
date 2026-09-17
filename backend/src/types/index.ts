@@ -27,6 +27,8 @@ export interface RoomData {
 export interface JoinRoomPayload {
   roomId: string;
   username: string;
+  role?: ParticipantRole;
+  isCreator?: boolean;
 }
 
 export interface LeaveRoomPayload {

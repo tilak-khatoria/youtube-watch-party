@@ -1,6 +1,6 @@
 import { Room } from '../models/Room';
 import { Participant } from '../models/Participant';
-import { RoomData } from '../types';
+import { RoomData, ParticipantRole } from '../types';
 
 export class RoomManager {
   private static instance: RoomManager;
@@ -80,7 +80,9 @@ export class RoomManager {
   public joinRoom(
     roomId: string,
     socketId: string,
-    username: string
+    username: string,
+    preferredRole?: ParticipantRole,
+    isCreator?: boolean
   ): { room: Room; participant: Participant; isNewRoom: boolean } {
     // If socket is already in another room, leave it first
     const currentRoomId = this.socketToRoomMap.get(socketId);
@@ -91,7 +93,7 @@ export class RoomManager {
     const { room, isNew } = this.getOrCreateRoom(roomId);
     const participant = new Participant(socketId, username);
     
-    room.addParticipant(participant);
+    room.addParticipant(participant, preferredRole, isCreator);
     this.socketToRoomMap.set(socketId, roomId);
 
     return { room, participant, isNewRoom: isNew };

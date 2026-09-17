@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import type { VideoPlayState } from '../types';
+import type { VideoPlayState, ParticipantRole } from '../types';
 import {
   Play,
   Pause,
@@ -18,7 +18,8 @@ interface YouTubePlayerProps {
   currentTime: number;
   playState: VideoPlayState;
   lastUpdated?: number;
-  canControl: boolean;
+  role?: ParticipantRole;
+  canControl?: boolean;
   onPlay: (time: number) => void;
   onPause: (time: number) => void;
   onSeek: (time: number) => void;
@@ -37,6 +38,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
   currentTime,
   playState,
   lastUpdated,
+  role,
   canControl,
   onPlay,
   onPause,
@@ -46,6 +48,20 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
   const playerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
+
+  // RBAC Permission Resolution:
+  // Host & Moderator: Full native interaction with YouTube iframe, interactive controls, no overlay
+  // Participant & Viewer: Watch only, disabled controls, transparent overlay (pointer-events: none)
+  const isHost = role === 'Host';
+  const isModerator = role === 'Moderator';
+  const isHostOrModerator = isHost || isModerator || Boolean(canControl);
+  const isParticipantOrViewer = role === 'Participant' || role === 'Viewer' || !isHostOrModerator;
+
+  // Keep a ref to latest permissions to avoid player re-initialization / black screens
+  const isHostOrModeratorRef = useRef<boolean>(isHostOrModerator);
+  useEffect(() => {
+    isHostOrModeratorRef.current = isHostOrModerator;
+  }, [isHostOrModerator]);
 
   // Guard flag to prevent infinite loops when programmatically updating the player
   const isProgrammaticUpdate = useRef<boolean>(false);
@@ -109,8 +125,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
         videoId: videoId || 'dQw4w9WgXcQ',
         playerVars: {
           autoplay: 0,
-          controls: canControl ? 1 : 0, // Native controls only for Host/Mod
-          disablekb: canControl ? 0 : 1,
+          controls: 1, // Native YouTube controls enabled; participants are restricted via overlay and pointerEvents
           modestbranding: 1,
           rel: 0,
           fs: 1,
@@ -145,8 +160,9 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
               return;
             }
 
-            // If Participant/Viewer somehow triggered a change, snap them back
-            if (!canControl) {
+            // Only Host and Moderator can control playback and broadcast actions
+            if (!isHostOrModeratorRef.current) {
+              // Participant or Viewer: revert unauthorized state changes immediately
               if (playState === 'paused' && event.data === 1) {
                 executeProgrammaticUpdate((p) => p.pauseVideo());
               } else if (playState === 'playing' && event.data === 2) {
@@ -191,7 +207,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
         playerRef.current = null;
       }
     };
-  }, [videoId, canControl, executeProgrammaticUpdate]);
+  }, [executeProgrammaticUpdate]);
 
   // 2. Programmatic Sync: Video ID change (change_video event)
   useEffect(() => {
@@ -259,7 +275,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
 
           // Detect if Host/Mod manually seeked using native YouTube timeline
           if (
-            canControl &&
+            isHostOrModeratorRef.current &&
             !isProgrammaticUpdate.current &&
             Math.abs(cur - lastRecordedTime.current) > 2.5
           ) {
@@ -277,11 +293,11 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
     }, 500);
 
     return () => clearInterval(timer);
-  }, [isPlayerReady, duration, canControl, onSeek]);
+  }, [isPlayerReady, duration, onSeek]);
 
-  // User Control Actions
+  // User Control Actions (Restricted strictly to Host and Moderator)
   const handleTogglePlay = () => {
-    if (!canControl) return;
+    if (!isHostOrModerator) return;
     if (playState === 'playing') {
       onPause(localTime);
       executeProgrammaticUpdate((p) => p.pauseVideo());
@@ -292,7 +308,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
   };
 
   const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!canControl) return;
+    if (!isHostOrModerator) return;
     const newTime = parseFloat(e.target.value);
     setLocalTime(newTime);
     lastRecordedTime.current = newTime;
@@ -363,48 +379,39 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
     >
       {/* Video Viewport Container */}
       <div className="relative w-full flex-1 min-h-[300px] bg-black flex items-center justify-center overflow-hidden">
-        {/* Dynamic target container for YouTube iframe */}
+        {/* Dynamic target container for YouTube iframe: Host & Moderator have full native interaction */}
         <div
           ref={viewportRef}
-          className={`w-full h-full absolute inset-0 ${!canControl ? 'pointer-events-none' : 'pointer-events-auto'}`}
-          style={{ pointerEvents: canControl ? 'auto' : 'none' }}
+          className="w-full h-full absolute inset-0"
+          style={{ pointerEvents: isParticipantOrViewer ? 'none' : 'auto' }}
         />
 
-        {/* =========================================================
-            TRANSPARENT CLICK-BLOCKING OVERLAY FOR PARTICIPANTS
-            Completely blocks participants from clicking, pausing,
-            or scrubbing the native YouTube player controls directly
-            ========================================================= */}
-        {!canControl && (
+        {/* Transparent overlay (pointer-events: none): MUST ONLY render if role is strictly Participant or Viewer */}
+        {isParticipantOrViewer && (
           <div
             id="participant-overlay"
             data-testid="participant-overlay"
-            className="participant-overlay absolute inset-0 z-20 bg-transparent cursor-not-allowed select-none"
-            style={{ pointerEvents: 'auto' }}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onDoubleClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
+            className="participant-overlay absolute inset-0 z-20 bg-transparent cursor-not-allowed select-none pointer-events-none"
+            style={{ pointerEvents: 'none' }}
             title="Watch Only: Playback is synchronized with the Host and Moderators."
           />
         )}
 
         {/* Status Overlay Badges */}
         <div className="absolute top-4 left-4 z-30 flex items-center gap-2 pointer-events-none">
-          {canControl ? (
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-900/80 border border-indigo-500/40 text-indigo-200 text-xs font-bold backdrop-blur-md shadow-lg shadow-indigo-900/30">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Controller Mode Active</span>
+          {isHost && (
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-900/80 border border-amber-500/40 text-amber-200 text-xs font-bold backdrop-blur-md shadow-lg shadow-amber-900/30">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Host Controller Active</span>
             </div>
-          ) : (
+          )}
+          {isModerator && (
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-900/80 border border-cyan-500/40 text-cyan-200 text-xs font-bold backdrop-blur-md shadow-lg shadow-cyan-900/30">
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Moderator Controller Active</span>
+            </div>
+          )}
+          {isParticipantOrViewer && (
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/85 border border-white/15 text-slate-300 text-xs font-semibold backdrop-blur-md shadow-lg">
               <Lock className="w-3.5 h-3.5 text-amber-400" />
               <span>Watch Only (Synced)</span>
@@ -429,7 +436,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
           </span>
 
           <div className="relative flex-1 flex items-center">
-            {canControl ? (
+            {isHostOrModerator ? (
               <input
                 type="range"
                 min={0}
@@ -441,7 +448,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
                 title="Seek video timeline"
               />
             ) : (
-              /* Non-interactive static progress bar for Participants */
+              /* Non-interactive static progress bar for Participants / Viewers */
               <div
                 className="w-full h-1.5 rounded-lg bg-slate-800 overflow-hidden relative cursor-not-allowed"
                 title="Timeline scrubbing is restricted to Host and Moderators"
@@ -463,7 +470,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
         <div className="flex items-center justify-between gap-4">
           {/* Left Controls: Play/Pause (Host/Mod only) & Volume */}
           <div className="flex items-center gap-3">
-            {canControl ? (
+            {isHostOrModerator ? (
               <button
                 onClick={handleTogglePlay}
                 title={isPlaying ? 'Pause (Broadcasts to room)' : 'Play (Broadcasts to room)'}
@@ -527,7 +534,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
             </button>
 
             {/* Change Video Button (Strictly Host/Mod only) */}
-            {canControl && (
+            {isHostOrModerator && (
               <button
                 onClick={onChangeVideoClick}
                 title="Change Video for Room"

@@ -4,6 +4,7 @@ import { ParticipantRole, RoomData, VideoState } from '../types';
 export class Room {
   private _id: string;
   private _hostId: string;
+  private _creatorUsername: string = '';
   private _participants: Map<string, Participant>;
   private _videoState: VideoState;
   private _createdAt: number;
@@ -29,6 +30,10 @@ export class Room {
     return this._hostId;
   }
 
+  get creatorUsername(): string {
+    return this._creatorUsername;
+  }
+
   get createdAt(): number {
     return this._createdAt;
   }
@@ -39,12 +44,34 @@ export class Room {
 
   /**
    * Adds a participant to the room.
-   * If this is the first participant or no host is set, assigns them as 'Host'.
+   * If this is the first participant, no host is set, or participant is returning creator/Host,
+   * assigns them as 'Host'.
    */
-  addParticipant(participant: Participant): void {
-    if (this._participants.size === 0 || !this._hostId) {
+  addParticipant(
+    participant: Participant,
+    preferredRole?: ParticipantRole,
+    isCreator?: boolean
+  ): void {
+    const isFirst = this._participants.size === 0 || !this._hostId;
+    const isReturningCreator = Boolean(
+      this._creatorUsername && this._creatorUsername.toLowerCase() === participant.username.toLowerCase()
+    );
+    const shouldBeHost = isFirst || preferredRole === 'Host' || isCreator === true || isReturningCreator;
+
+    if (shouldBeHost) {
       participant.setRole('Host');
       this._hostId = participant.id;
+      if (!this._creatorUsername) {
+        this._creatorUsername = participant.username;
+      }
+      // If there was an existing temporary host, ensure only one Host exists
+      for (const [id, p] of this._participants.entries()) {
+        if (id !== participant.id && p.role === 'Host') {
+          p.setRole('Moderator');
+        }
+      }
+    } else if (preferredRole === 'Moderator') {
+      participant.setRole('Moderator');
     } else {
       participant.setRole('Participant');
     }
