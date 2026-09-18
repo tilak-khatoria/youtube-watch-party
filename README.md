@@ -1,6 +1,6 @@
 # YouTube Watch Party (SyncParty)
 
-> 🌐 **Live Deployment URL:** [https://youtube-watch-party.onrender.com](https://youtube-watch-party.onrender.com)  
+> 🌐 **Live Deployment URL:** [https://youtube-watch-party-frontend-cbxv.onrender.com/](https://youtube-watch-party-frontend-cbxv.onrender.com/)  
 > 👤 **Author:** Tilak Khatoria  
 > 🛡️ **Assignment:** Intern Assignment: YouTube Watch Party System (100% Compliant + SQLite & RBAC Bonus)
 
