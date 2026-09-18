@@ -7,6 +7,7 @@ export interface VideoState {
   currentTime: number;
   playState: VideoPlayState;
   lastUpdated: number;
+  lastActionTimestamp: number;
 }
 
 export interface ParticipantData {
@@ -49,7 +50,8 @@ export interface PausePayload {
 
 export interface SeekPayload {
   roomId?: string;
-  currentTime: number;
+  currentTime?: number;
+  time?: number;
 }
 
 export interface ChangeVideoPayload {
@@ -62,6 +64,9 @@ export interface SyncStatePayload {
   playState: VideoPlayState;
   currentTime: number;
   videoId?: string;
+  lastUpdated?: number;
+  lastActionTimestamp?: number;
+  isHeartbeat?: boolean;
 }
 
 export interface AssignRolePayload {
@@ -93,4 +98,33 @@ export interface ActionRejectedPayload {
   action: string;
   message: string;
   requiredRoles?: ParticipantRole[];
+}
+
+export interface SendReactionPayload {
+  roomId?: string;
+  emoji: string;
+}
+
+export interface FloatingReaction {
+  id: string;
+  emoji: string;
+  senderName: string;
+  timestamp: number;
+  xOffset: number; // percentage (10 to 90) across the player
+}
+
+export interface ControlRequest {
+  requestId: string;
+  roomId: string;
+  requesterId: string;
+  requesterName: string;
+  requesterRole: ParticipantRole;
+  timestamp: number;
+}
+
+export interface ControlResponsePayload {
+  requestId: string;
+  requesterId: string;
+  approve: boolean;
+  roomId?: string;
 }

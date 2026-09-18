@@ -198,10 +198,17 @@ export class RoomManager {
   }
 
   /**
-   * Lists all active rooms.
+   * Lists all active rooms as serialized RoomData.
    */
   public getAllRooms(): RoomData[] {
     return Array.from(this.rooms.values()).map((r) => r.getState());
+  }
+
+  /**
+   * Returns all active Room model instances for heartbeat and state sync.
+   */
+  public getAllRoomsRaw(): Room[] {
+    return Array.from(this.rooms.values());
   }
 
   /**

@@ -113,6 +113,12 @@ export const HomePage: React.FC = () => {
       {/* Sticky Glass Navbar */}
       <Navbar />
 
+      {/* Ambient Background Gradient Blobs (Phase 3 OLED Motion) */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10 select-none">
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-to-tr from-cyan-600/12 via-indigo-600/8 to-purple-600/12 rounded-full blur-3xl opacity-50 dark:opacity-25 animate-spin-slow" />
+        <div className="absolute top-1/2 right-10 w-[550px] h-[550px] bg-gradient-to-bl from-emerald-600/8 via-cyan-600/8 to-indigo-600/8 rounded-full blur-3xl opacity-35 dark:opacity-15 animate-pulse" />
+      </div>
+
       {/* Main Content */}
       <main className="w-full flex-1 flex flex-col items-center">
         <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 flex flex-col gap-y-12 sm:gap-y-14">
@@ -162,7 +168,7 @@ export const HomePage: React.FC = () => {
           {/* Action Cards: Create vs Join Grid */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
             {/* Card 1: Create Party */}
-            <div className="group rounded-2xl p-6 sm:p-8 flex flex-col justify-between bg-white dark:bg-white/[0.03] shadow-sm dark:shadow-none border border-gray-200 dark:border-white/[0.08] backdrop-blur-md hover:border-gray-300 dark:hover:border-white/15 transition-all duration-200">
+            <div className="group rounded-2xl p-6 sm:p-8 flex flex-col justify-between bg-white dark:bg-white/[0.03] shadow-sm dark:shadow-none border border-gray-200 dark:border-white/[0.08] backdrop-blur-md hover:border-cyan-500/30 hover:-translate-y-1 hover:shadow-xl dark:hover:shadow-cyan-950/20 transition-all duration-300">
               <div className="flex flex-col">
                 {/* Card Header */}
                 <div className="flex items-center justify-between gap-4 mb-6">
@@ -255,7 +261,7 @@ export const HomePage: React.FC = () => {
             </div>
 
             {/* Card 2: Join Party */}
-            <div className="group rounded-2xl p-6 sm:p-8 flex flex-col justify-between bg-white dark:bg-white/[0.03] shadow-sm dark:shadow-none border border-gray-200 dark:border-white/[0.08] backdrop-blur-md hover:border-gray-300 dark:hover:border-white/15 transition-all duration-200">
+            <div className="group rounded-2xl p-6 sm:p-8 flex flex-col justify-between bg-white dark:bg-white/[0.03] shadow-sm dark:shadow-none border border-gray-200 dark:border-white/[0.08] backdrop-blur-md hover:border-cyan-500/30 hover:-translate-y-1 hover:shadow-xl dark:hover:shadow-cyan-950/20 transition-all duration-300">
               <div className="flex flex-col">
                 {/* Card Header */}
                 <div className="flex items-center justify-between gap-4 mb-6">

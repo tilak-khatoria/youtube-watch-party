@@ -31,7 +31,9 @@ import {
   Tv,
   Radio,
   User,
+  Hand,
 } from 'lucide-react';
+import type { FloatingReaction, ControlRequest, ToastAction } from '../types';
 
 export const RoomPage: React.FC = () => {
   const { roomId: rawRoomId } = useParams<{ roomId: string }>();
@@ -110,22 +112,34 @@ export const RoomPage: React.FC = () => {
   const [toasts, setToasts] = useState<NotificationToast[]>([]);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState<boolean>(false);
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const [reactions, setReactions] = useState<FloatingReaction[]>([]);
+  const [lastControlRequestTime, setLastControlRequestTime] = useState<number>(0);
 
-  // Helper to add toast notifications safely
-  const addToast = useCallback((type: 'info' | 'success' | 'warning' | 'error', message: string) => {
-    const newToast: NotificationToast = {
-      id: `toast_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      type,
-      message,
-      timestamp: Date.now(),
-    };
-    setToasts((prev) => [...(prev || []).slice(-4), newToast]);
+  // Helper to add toast notifications safely with optional interactive actions
+  const addToast = useCallback(
+    (
+      type: 'info' | 'success' | 'warning' | 'error',
+      message: string,
+      actions?: ToastAction[],
+      duration: number = 4500
+    ) => {
+      const newToast: NotificationToast = {
+        id: `toast_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        type,
+        message,
+        timestamp: Date.now(),
+        actions,
+        duration,
+      };
+      setToasts((prev) => [...(prev || []).slice(-4), newToast]);
 
-    // Auto dismiss after 4.5s
-    setTimeout(() => {
-      setToasts((prev) => (prev || []).filter((t) => t?.id !== newToast.id));
-    }, 4500);
-  }, []);
+      // Auto dismiss after duration
+      setTimeout(() => {
+        setToasts((prev) => (prev || []).filter((t) => t?.id !== newToast.id));
+      }, duration);
+    },
+    []
+  );
 
   const handleDismissToast = (id: string) => {
     setToasts((prev) => (prev || []).filter((t) => t?.id !== id));
@@ -325,6 +339,61 @@ export const RoomPage: React.FC = () => {
       }
     });
 
+    // 12. Floating Emoji Reactions
+    socket.on('receive_reaction', (reaction: FloatingReaction) => {
+      if (reaction?.id) {
+        setReactions((prev) => [...(prev || []).slice(-15), reaction]);
+        setTimeout(() => {
+          setReactions((prev) => (prev || []).filter((r) => r.id !== reaction.id));
+        }, 2500);
+      }
+    });
+
+    // 13. Control Request Handlers (Viewer -> Host Promotion)
+    socket.on('control_requested', (data: ControlRequest) => {
+      addToast(
+        'info',
+        `✋ ${data?.requesterName || 'A participant'} requested playback control!`,
+        [
+          {
+            label: 'Accept',
+            variant: 'success',
+            onClick: () => {
+              const s = getSocket();
+              s.emit('respond_control_request', {
+                requestId: data.requestId,
+                requesterId: data.requesterId,
+                approve: true,
+                roomId: canonicalRoomId,
+              });
+            },
+          },
+          {
+            label: 'Deny',
+            variant: 'danger',
+            onClick: () => {
+              const s = getSocket();
+              s.emit('respond_control_request', {
+                requestId: data.requestId,
+                requesterId: data.requesterId,
+                approve: false,
+                roomId: canonicalRoomId,
+              });
+            },
+          },
+        ],
+        12000
+      );
+    });
+
+    socket.on('control_request_sent', (data: { message: string }) => {
+      addToast('info', data?.message || 'Control request submitted.');
+    });
+
+    socket.on('control_request_resolved', (data: { approved: boolean; message: string }) => {
+      addToast(data?.approved ? 'success' : 'warning', data?.message || 'Control request status updated.');
+    });
+
     return () => {
       socket.off('connect');
       socket.off('room_joined');
@@ -343,6 +412,10 @@ export const RoomPage: React.FC = () => {
       socket.off('action_rejected');
       socket.off('error_message');
       socket.off('receive_message');
+      socket.off('receive_reaction');
+      socket.off('control_requested');
+      socket.off('control_request_sent');
+      socket.off('control_request_resolved');
     };
   }, [canonicalRoomId, username, isDirectLinkFallback, isStoredHost, navigate, addToast]);
 
@@ -431,6 +504,23 @@ export const RoomPage: React.FC = () => {
     socket.emit('send_message', { roomId: canonicalRoomId, message });
   };
 
+  const handleSendReaction = (emoji: string) => {
+    const socket = getSocket();
+    socket.emit('send_reaction', { roomId: canonicalRoomId, emoji });
+  };
+
+  const handleRequestControl = () => {
+    const now = Date.now();
+    if (now - lastControlRequestTime < 15000) {
+      const waitSec = Math.ceil((15000 - (now - lastControlRequestTime)) / 1000);
+      addToast('warning', `Please wait ${waitSec}s before requesting control again.`);
+      return;
+    }
+    setLastControlRequestTime(now);
+    const socket = getSocket();
+    socket.emit('request_control', { roomId: canonicalRoomId });
+  };
+
   const handleLeaveRoom = () => {
     const socket = getSocket();
     socket.emit('leave_room', { roomId: canonicalRoomId });
@@ -511,6 +601,12 @@ export const RoomPage: React.FC = () => {
           role={currentUserRole}
           onLeaveRoom={handleLeaveRoom}
         />
+
+        {/* Ambient Background Gradient Blobs (Phase 3 OLED Motion) */}
+        <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10 select-none">
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[720px] h-[720px] bg-gradient-to-tr from-cyan-600/12 via-indigo-600/8 to-purple-600/12 rounded-full blur-3xl opacity-50 dark:opacity-25 animate-spin-slow" />
+          <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-gradient-to-br from-emerald-600/10 via-cyan-600/8 to-blue-600/10 rounded-full blur-3xl opacity-35 dark:opacity-15 animate-pulse" />
+        </div>
 
         {/* Main Party Room Workspace */}
         <main className="flex-1 max-w-[1560px] w-full mx-auto p-3 sm:p-4 lg:p-6 flex flex-col lg:flex-row gap-4 sm:gap-6 justify-center">
@@ -597,20 +693,31 @@ export const RoomPage: React.FC = () => {
                 </button>
               </form>
             ) : (
-              /* Informative status bar for Participants / Viewers */
-              <div className="mb-3.5 px-4 py-2.5 rounded-2xl bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.08] shadow-sm dark:shadow-none flex items-center justify-between text-xs text-gray-600 dark:text-gray-300 backdrop-blur-md">
-                <div className="flex items-center gap-2.5">
-                  <Radio className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 animate-pulse" />
-                  <span>
+              /* Informative status bar for Participants / Viewers with Request Control */
+              <div className="mb-3.5 px-4 py-2.5 rounded-2xl bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.08] shadow-sm dark:shadow-none flex items-center justify-between gap-3 text-xs text-gray-600 dark:text-gray-300 backdrop-blur-md transition-all duration-300 hover:border-cyan-500/30">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Radio className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 animate-pulse shrink-0" />
+                  <span className="truncate">
                     Watching live with party • Video ID:{' '}
                     <code className="text-cyan-600 dark:text-cyan-400 font-mono font-semibold">
                       {videoState?.videoId || 'None'}
                     </code>
                   </span>
                 </div>
-                <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium bg-gray-100 dark:bg-white/[0.04] px-2.5 py-0.5 rounded-full border border-gray-200 dark:border-white/10">
-                  Watch Only • Managed by Host & Mods
-                </span>
+                
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium bg-gray-100 dark:bg-white/[0.04] px-2.5 py-1 rounded-full border border-gray-200 dark:border-white/10 hidden sm:inline">
+                    Watch Only Mode
+                  </span>
+                  <button
+                    onClick={handleRequestControl}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-sm transition-all duration-200 cursor-pointer hover:scale-[1.03] active:scale-[0.97]"
+                    title="Request permission from the Host to control playback and change video"
+                  >
+                    <Hand className="w-3.5 h-3.5" />
+                    <span>Request Control</span>
+                  </button>
+                </div>
               </div>
             )}
 
@@ -627,6 +734,7 @@ export const RoomPage: React.FC = () => {
                 onPause={handlePause}
                 onSeek={handleSeek}
                 onChangeVideoClick={() => setIsVideoModalOpen(true)}
+                reactions={reactions}
               />
             </div>
           </section>
@@ -675,6 +783,7 @@ export const RoomPage: React.FC = () => {
                   messages={chatMessages || []}
                   currentUserId={currentUserId}
                   onSendMessage={handleSendMessage}
+                  onSendReaction={handleSendReaction}
                 />
               )}
             </div>

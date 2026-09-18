@@ -7,6 +7,7 @@ export interface VideoState {
   currentTime: number;
   playState: VideoPlayState;
   lastUpdated: number;
+  lastActionTimestamp?: number;
 }
 
 export interface ParticipantData {
@@ -33,11 +34,43 @@ export interface ChatMessage {
   timestamp: number;
 }
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+  variant?: 'primary' | 'danger' | 'success';
+}
+
 export interface NotificationToast {
   id: string;
   type: 'info' | 'success' | 'warning' | 'error';
   message: string;
   timestamp: number;
+  actions?: ToastAction[];
+  duration?: number;
+}
+
+export interface FloatingReaction {
+  id: string;
+  emoji: string;
+  senderName: string;
+  timestamp: number;
+  xOffset: number; // percentage width across player
+}
+
+export interface ControlRequest {
+  requestId: string;
+  roomId: string;
+  requesterId: string;
+  requesterName: string;
+  requesterRole: ParticipantRole;
+  timestamp: number;
+}
+
+export interface ControlResponsePayload {
+  requestId: string;
+  requesterId: string;
+  approve: boolean;
+  roomId?: string;
 }
 
 export interface SyncStatePayload {
@@ -46,6 +79,8 @@ export interface SyncStatePayload {
   currentTime: number;
   videoId?: string;
   lastUpdated?: number;
+  lastActionTimestamp?: number;
+  isHeartbeat?: boolean;
   triggeredBy?: ParticipantData;
 }
 

@@ -6,6 +6,7 @@ interface LiveChatProps {
   messages: ChatMessage[];
   currentUserId?: string;
   onSendMessage: (message: string) => void;
+  onSendReaction?: (emoji: string) => void;
 }
 
 const QUICK_EMOJIS = ['🔥', '🍿', '😂', '👏', '❤️', '🎉'];
@@ -14,6 +15,7 @@ export const LiveChat: React.FC<LiveChatProps> = ({
   messages,
   currentUserId,
   onSendMessage,
+  onSendReaction,
 }) => {
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -30,6 +32,9 @@ export const LiveChat: React.FC<LiveChatProps> = ({
   };
 
   const handleSendEmoji = (emoji: string) => {
+    if (onSendReaction) {
+      onSendReaction(emoji);
+    }
     onSendMessage(emoji);
   };
 

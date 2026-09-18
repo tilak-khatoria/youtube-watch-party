@@ -26,6 +26,7 @@ interface YouTubePlayerProps {
   onPause: (time: number) => void;
   onSeek: (time: number) => void;
   onChangeVideoClick: () => void;
+  reactions?: import('../types').FloatingReaction[];
 }
 
 declare global {
@@ -46,6 +47,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
   onPause,
   onSeek,
   onChangeVideoClick,
+  reactions = [],
 }) => {
   const playerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -368,19 +370,42 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
   };
 
   const isPlaying = playState === 'playing';
+  const isPausedWaiting = !!videoId && playState === 'paused';
 
   return (
     <div
       ref={containerRef}
-      className="flex flex-col w-full h-full bg-pure-black rounded-2xl overflow-hidden border border-neutral-200 dark:border-border-subtle shadow-2xl relative group"
+      className={`flex flex-col w-full h-full bg-black rounded-2xl overflow-hidden relative group transition-all duration-500 ${
+        isPausedWaiting
+          ? 'border border-cyan-500/40 shadow-[0_0_35px_rgba(6,182,212,0.18)]'
+          : 'border border-neutral-200 dark:border-white/[0.08] shadow-2xl'
+      }`}
     >
       {/* Video Viewport Container */}
-      <div className="relative w-full flex-1 min-h-[300px] bg-pure-black flex items-center justify-center overflow-hidden">
+      <div className="relative w-full flex-1 min-h-[300px] bg-black flex items-center justify-center overflow-hidden">
         <div
           ref={viewportRef}
           className="w-full h-full absolute inset-0"
           style={{ pointerEvents: isParticipantOrViewer ? 'none' : 'auto' }}
         />
+
+        {/* Floating Synchronized Emoji Reactions */}
+        <div className="absolute inset-0 z-35 pointer-events-none overflow-hidden select-none">
+          {reactions.map((r) => (
+            <div
+              key={r.id}
+              className="absolute bottom-8 flex flex-col items-center animate-float-up pointer-events-none"
+              style={{ left: `${r.xOffset}%` }}
+            >
+              <span className="text-3xl sm:text-4xl drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
+                {r.emoji}
+              </span>
+              <span className="text-[9px] font-semibold text-cyan-200 bg-black/75 px-2 py-0.5 rounded-full backdrop-blur-md border border-white/10 mt-1 shadow-md">
+                {r.senderName}
+              </span>
+            </div>
+          ))}
+        </div>
 
         {/* Transparent overlay: strictly for Participant or Viewer */}
         {isParticipantOrViewer && videoId && (

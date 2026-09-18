@@ -20,6 +20,10 @@ import {
   ChatMessage,
   ActionRejectedPayload,
   ParticipantRole,
+  SendReactionPayload,
+  FloatingReaction,
+  ControlRequest,
+  ControlResponsePayload,
 } from './types';
 
 // Initialize Express App
@@ -85,6 +89,28 @@ function rejectAction(
   console.warn(`[RBAC Rejected] Socket ${socket.id} attempted "${action}": ${message}`);
   socket.emit('action_rejected', payload);
   socket.emit('error_message', { action, message });
+}
+
+// In-Memory Sliding Window Rate Limiting
+const chatRateLimiter = new Map<string, number[]>();
+const reactionRateLimiter = new Map<string, number[]>();
+const controlCooldownMap = new Map<string, number>();
+
+function checkRateLimit(
+  limiterMap: Map<string, number[]>,
+  key: string,
+  maxRequests: number,
+  windowMs: number
+): boolean {
+  const now = Date.now();
+  const history = (limiterMap.get(key) || []).filter((t) => now - t < windowMs);
+  if (history.length >= maxRequests) {
+    limiterMap.set(key, history);
+    return false;
+  }
+  history.push(now);
+  limiterMap.set(key, history);
+  return true;
 }
 
 // ==========================================
@@ -210,20 +236,19 @@ io.on('connection', (socket: Socket) => {
         room: room.getState(),
       });
 
-      // 2. Immediately send current video state to syncing user
-      socket.emit('sync_state', {
-        roomId: cleanRoomId,
-        videoId: room.videoState.videoId,
-        currentTime: room.videoState.currentTime,
-        playState: room.videoState.playState,
-        lastUpdated: room.videoState.lastUpdated,
-      });
+      // 2. Immediately send fully computed current video state to syncing user so late-joiners never buffer
+      socket.emit('sync_state', room.getSyncPayload());
 
       // 3. Notify other participants in the room that someone joined
-      socket.to(cleanRoomId).emit('user_joined', {
+      const joinedPayload = {
+        userId: participant.id,
+        username: participant.username,
+        role: participant.role,
+        participants: room.getParticipants().map((p) => p.toJSON()),
         participant: participant.toJSON(),
         message: `${participant.username} has joined the party!`,
-      });
+      };
+      socket.to(cleanRoomId).emit('user_joined', joinedPayload);
 
       // 4. Broadcast updated participants list to everyone in the room
       io.to(cleanRoomId).emit('participants_updated', {
@@ -376,8 +401,11 @@ io.on('connection', (socket: Socket) => {
    */
   socket.on('seek', (payload: SeekPayload) => {
     try {
-      if (!payload || typeof payload.currentTime !== 'number') {
-        return socket.emit('error_message', { message: 'Invalid seek payload. currentTime is required.' });
+      const targetTime = typeof payload?.time === 'number' ? payload.time : payload?.currentTime;
+      if (typeof targetTime !== 'number') {
+        return socket.emit('error_message', {
+          message: 'Invalid seek payload. time or currentTime number is required.',
+        });
       }
 
       const room = payload.roomId
@@ -400,22 +428,23 @@ io.on('connection', (socket: Socket) => {
 
       const participant = room.getParticipant(socket.id);
 
-      // Update room state
+      // Update room state with authoritative seek target
       room.updateVideoState({
-        currentTime: payload.currentTime,
+        currentTime: targetTime,
       });
 
       console.log(
-        `[Seek] Room: ${room.id} | Seeked to: ${payload.currentTime}s | Triggered by: ${participant?.username} (${participant?.role})`
+        `[Seek] Room: ${room.id} | Seeked to: ${targetTime}s | Triggered by: ${participant?.username} (${participant?.role})`
       );
 
-      // Broadcast seek event and sync_state to room
+      // Broadcast seek event and computed sync_state to room
       const eventData = {
         roomId: room.id,
         videoId: room.videoState.videoId,
-        currentTime: payload.currentTime,
+        currentTime: targetTime,
         playState: room.videoState.playState,
-        lastUpdated: Date.now(),
+        lastUpdated: room.videoState.lastUpdated,
+        lastActionTimestamp: room.videoState.lastActionTimestamp,
         triggeredBy: participant?.toJSON(),
       };
 
@@ -706,12 +735,23 @@ io.on('connection', (socket: Socket) => {
   // ==========================================
 
   /**
-   * Event: send_message (Live Chat Support)
+   * Event: send_message (Live Chat Support with Rate Limiting)
    * Payload: { roomId?: string, message: string }
    */
   socket.on('send_message', (payload: SendMessagePayload) => {
     try {
       if (!payload || !payload.message || typeof payload.message !== 'string') return;
+
+      const trimmedMessage = payload.message.trim();
+      if (!trimmedMessage) return;
+
+      // Rate limit: Max 5 messages in 3 seconds
+      if (!checkRateLimit(chatRateLimiter, socket.id, 5, 3000)) {
+        return socket.emit('action_rejected', {
+          action: 'send_message',
+          message: 'Chat rate limit exceeded. Please slow down.',
+        });
+      }
 
       const room = payload.roomId
         ? roomManager.getRoom(payload.roomId)
@@ -728,7 +768,7 @@ io.on('connection', (socket: Socket) => {
         senderId: socket.id,
         username,
         role,
-        message: payload.message.trim(),
+        message: trimmedMessage.slice(0, 500),
         timestamp: Date.now(),
       };
 
@@ -736,6 +776,193 @@ io.on('connection', (socket: Socket) => {
       io.to(room.id).emit('receive_message', chatMessage);
     } catch (err: any) {
       console.error(`[Error in send_message]:`, err);
+    }
+  });
+
+  /**
+   * Event: send_reaction (Floating Screen Reactions)
+   * Payload: { roomId?: string, emoji: string }
+   */
+  socket.on('send_reaction', (payload: SendReactionPayload) => {
+    try {
+      if (!payload || !payload.emoji || typeof payload.emoji !== 'string') return;
+
+      // Rate limit: Max 8 reactions per 3 seconds
+      if (!checkRateLimit(reactionRateLimiter, socket.id, 8, 3000)) {
+        return; // silently drop excessive reaction spam
+      }
+
+      const room = payload.roomId
+        ? roomManager.getRoom(payload.roomId)
+        : roomManager.getRoomBySocketId(socket.id);
+
+      if (!room) return;
+
+      const participant = room.getParticipant(socket.id);
+      const cleanEmoji = payload.emoji.trim().slice(0, 8);
+
+      const reactionData: FloatingReaction = {
+        id: `react_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        emoji: cleanEmoji,
+        senderName: participant ? participant.username : 'Participant',
+        timestamp: Date.now(),
+        xOffset: Math.floor(12 + Math.random() * 76), // 12% to 88% width
+      };
+
+      io.to(room.id).emit('receive_reaction', reactionData);
+    } catch (err: any) {
+      console.error(`[Error in send_reaction]:`, err);
+    }
+  });
+
+  /**
+   * Event: request_control (Participant asks Host for Playback Control)
+   * Payload: { roomId?: string }
+   */
+  socket.on('request_control', (payload?: { roomId?: string }) => {
+    try {
+      const room = payload?.roomId
+        ? roomManager.getRoom(payload.roomId)
+        : roomManager.getRoomBySocketId(socket.id);
+
+      if (!room) {
+        return socket.emit('error_message', { message: 'Room not found' });
+      }
+
+      const participant = room.getParticipant(socket.id);
+      if (!participant) return;
+
+      if (participant.canControlPlayback()) {
+        return socket.emit('error_message', {
+          message: 'You already possess playback control permissions.',
+        });
+      }
+
+      // Cooldown: 1 request every 15 seconds per user
+      const now = Date.now();
+      const lastRequest = controlCooldownMap.get(socket.id) || 0;
+      if (now - lastRequest < 15000) {
+        const waitSec = Math.ceil((15000 - (now - lastRequest)) / 1000);
+        return socket.emit('error_message', {
+          message: `Please wait ${waitSec}s before requesting control again.`,
+        });
+      }
+      controlCooldownMap.set(socket.id, now);
+
+      const request: ControlRequest = {
+        requestId: `ctrl_req_${now}_${Math.random().toString(36).substring(2, 6)}`,
+        roomId: room.id,
+        requesterId: participant.id,
+        requesterName: participant.username,
+        requesterRole: participant.role,
+        timestamp: now,
+      };
+
+      console.log(
+        `[Control Requested] User ${participant.username} requested control in room ${room.id}`
+      );
+
+      // Notify the Host directly
+      const hostSocket = io.sockets.sockets.get(room.hostId);
+      if (hostSocket) {
+        hostSocket.emit('control_requested', request);
+      }
+
+      // Notify other moderators if any
+      for (const p of room.getParticipants()) {
+        if (p.isModerator() && p.id !== socket.id && p.id !== room.hostId) {
+          const modSocket = io.sockets.sockets.get(p.id);
+          modSocket?.emit('control_requested', request);
+        }
+      }
+
+      socket.emit('control_request_sent', {
+        message: 'Request sent to the Host! Awaiting approval...',
+        requestId: request.requestId,
+      });
+    } catch (err: any) {
+      console.error(`[Error in request_control]:`, err);
+    }
+  });
+
+  /**
+   * Event: respond_control_request (Host/Mod approves or denies control request)
+   * Payload: { requestId: string, requesterId: string, approve: boolean, roomId?: string }
+   */
+  socket.on('respond_control_request', (payload: ControlResponsePayload) => {
+    try {
+      if (!payload || !payload.requesterId || typeof payload.approve !== 'boolean') return;
+
+      const room = payload.roomId
+        ? roomManager.getRoom(payload.roomId)
+        : roomManager.getRoomBySocketId(socket.id);
+
+      if (!room) return;
+
+      // Only Host can promote to Moderator
+      if (!room.isHost(socket.id)) {
+        return rejectAction(
+          socket,
+          'respond_control_request',
+          'Forbidden: Only the Room Host can approve control requests.',
+          ['Host']
+        );
+      }
+
+      const hostParticipant = room.getParticipant(socket.id);
+      const targetUser = room.getParticipant(payload.requesterId);
+
+      if (!targetUser) {
+        return socket.emit('error_message', { message: 'Target user is no longer in this room.' });
+      }
+
+      if (payload.approve) {
+        // Promote to Moderator
+        const assignResult = room.assignRole(payload.requesterId, 'Moderator', socket.id);
+        if (assignResult.success) {
+          console.log(
+            `[Control Approved] Host ${hostParticipant?.username} approved control for ${targetUser.username}`
+          );
+
+          // Broadcast role_assigned to all clients
+          io.to(room.id).emit('role_assigned', {
+            roomId: room.id,
+            userId: targetUser.id,
+            username: targetUser.username,
+            role: 'Moderator',
+            previousRole: assignResult.previousRole,
+            assignedBy: hostParticipant?.toJSON(),
+            participants: room.getParticipants().map((p) => p.toJSON()),
+            message: `${targetUser.username} was promoted to Moderator!`,
+          });
+
+          // Update participants list
+          io.to(room.id).emit('participants_updated', {
+            participants: room.getParticipants().map((p) => p.toJSON()),
+            hostId: room.hostId,
+          });
+
+          // Direct message to target
+          const targetSocket = io.sockets.sockets.get(payload.requesterId);
+          targetSocket?.emit('control_request_resolved', {
+            approved: true,
+            message: '🎉 Your request for playback control was approved! You are now a Moderator.',
+          });
+        }
+      } else {
+        console.log(
+          `[Control Denied] Host ${hostParticipant?.username} declined control for ${targetUser.username}`
+        );
+
+        // Notify requester of denial
+        const targetSocket = io.sockets.sockets.get(payload.requesterId);
+        targetSocket?.emit('control_request_resolved', {
+          approved: false,
+          message: 'Your request for playback control was declined by the Host.',
+        });
+      }
+    } catch (err: any) {
+      console.error(`[Error in respond_control_request]:`, err);
     }
   });
 
@@ -770,17 +997,30 @@ function handleLeave(socket: Socket, targetRoomId?: string): void {
 
   // Notify others that participant left
   socket.to(room.id).emit('user_left', {
+    userId: participant.id,
+    username: participant.username,
+    participants: room.getParticipants().map((p) => p.toJSON()),
     participant: participant.toJSON(),
     message: `${participant.username} has left the party.`,
   });
 
-  // If a new host was elected, notify the room
+  // If a new host was elected by fallback engine, notify the room
   if (newHost) {
-    console.log(`[Host Promoted] Room: ${room.id} | New Host: ${newHost.username} (${newHost.id})`);
+    console.log(`[Host Promoted via Fallback] Room: ${room.id} | New Host: ${newHost.username} (${newHost.id})`);
     io.to(room.id).emit('host_changed', {
+      roomId: room.id,
       newHostId: newHost.id,
       newHost: newHost.toJSON(),
       message: `${newHost.username} is now the Host.`,
+    });
+
+    io.to(room.id).emit('role_assigned', {
+      roomId: room.id,
+      userId: newHost.id,
+      username: newHost.username,
+      role: 'Host',
+      participants: room.getParticipants().map((p) => p.toJSON()),
+      message: `${newHost.username} was automatically promoted to Host.`,
     });
   }
 
@@ -790,6 +1030,29 @@ function handleLeave(socket: Socket, targetRoomId?: string): void {
     hostId: room.hostId,
   });
 }
+
+// ==========================================
+// 5-Second Periodic Computed-Time Heartbeat Loop
+// Automatically broadcasts exact computed time to active rooms
+// to eliminate drift across clients.
+// ==========================================
+const HEARTBEAT_INTERVAL_MS = 5000;
+const heartbeatTimer = setInterval(() => {
+  try {
+    const activeRooms = roomManager.getAllRoomsRaw();
+    for (const room of activeRooms) {
+      if (!room.isEmpty() && room.videoState.videoId && room.videoState.playState === 'playing') {
+        io.to(room.id).emit('sync_state', room.getSyncPayload(true));
+      }
+    }
+  } catch (err) {
+    console.error('[Heartbeat Error]:', err);
+  }
+}, HEARTBEAT_INTERVAL_MS);
+
+// Clean up timer on process termination
+process.on('SIGINT', () => clearInterval(heartbeatTimer));
+process.on('SIGTERM', () => clearInterval(heartbeatTimer));
 
 // ==========================================
 // Start Server

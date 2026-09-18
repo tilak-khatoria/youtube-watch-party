@@ -19,6 +19,7 @@ export class Room {
       currentTime: 0,
       playState: 'paused',
       lastUpdated: Date.now(),
+      lastActionTimestamp: Date.now(),
     };
   }
 
@@ -39,7 +40,23 @@ export class Room {
   }
 
   get videoState(): VideoState {
-    return { ...this._videoState };
+    return {
+      ...this._videoState,
+      currentTime: this.getComputedTime(),
+    };
+  }
+
+  /**
+   * Dynamically calculates currentTime in seconds:
+   * When playing: savedTime + (Date.now() - lastActionTimestamp) / 1000
+   * When paused: savedTime
+   */
+  getComputedTime(): number {
+    if (this._videoState.playState === 'playing') {
+      const elapsedSec = (Date.now() - this._videoState.lastActionTimestamp) / 1000;
+      return Math.max(0, this._videoState.currentTime + elapsedSec);
+    }
+    return this._videoState.currentTime;
   }
 
   /**
@@ -275,7 +292,9 @@ export class Room {
   }
 
   /**
-   * Automatically promotes the next participant to Host when the current host leaves.
+   * Automatically promotes the next participant to Host when current host leaves.
+   * Promotes the first Moderator (oldest by joinedAt).
+   * If no Moderators exist, promotes the oldest active Participant by joinedAt.
    */
   assignNextHost(): Participant | null {
     if (this.isEmpty()) {
@@ -283,10 +302,23 @@ export class Room {
       return null;
     }
 
-    // Try finding a Moderator first, otherwise first available participant
     const participants = this.getParticipants();
-    const moderator = participants.find((p) => p.isModerator());
-    const nextHost = moderator || participants[0];
+    
+    // 1. Check for Moderators first, ordered by oldest joinedAt
+    const moderators = participants
+      .filter((p) => p.isModerator())
+      .sort((a, b) => a.joinedAt - b.joinedAt);
+
+    if (moderators.length > 0) {
+      const nextHost = moderators[0];
+      nextHost.setRole('Host');
+      this._hostId = nextHost.id;
+      return nextHost;
+    }
+
+    // 2. If no Moderators, promote the oldest Participant by joinedAt
+    const sortedParticipants = [...participants].sort((a, b) => a.joinedAt - b.joinedAt);
+    const nextHost = sortedParticipants[0];
 
     if (nextHost) {
       nextHost.setRole('Host');
@@ -298,15 +330,38 @@ export class Room {
   }
 
   /**
-   * Updates the playback state of the room.
+   * Updates the playback state of the room using the computed-time model.
    */
   updateVideoState(newState: Partial<VideoState>): VideoState {
+    const now = Date.now();
+    // If currentTime is explicitly specified, use it as the new baseline saved time.
+    // Otherwise, freeze current dynamically computed time.
+    const newSavedTime =
+      newState.currentTime !== undefined ? Math.max(0, newState.currentTime) : this.getComputedTime();
+
     this._videoState = {
       ...this._videoState,
       ...newState,
-      lastUpdated: Date.now(),
+      currentTime: newSavedTime,
+      lastUpdated: now,
+      lastActionTimestamp: now,
     };
     return this.videoState;
+  }
+
+  /**
+   * Returns current sync payload with dynamically computed time.
+   */
+  getSyncPayload(isHeartbeat: boolean = false) {
+    return {
+      roomId: this._id,
+      videoId: this._videoState.videoId,
+      currentTime: this.getComputedTime(),
+      playState: this._videoState.playState,
+      lastUpdated: this._videoState.lastUpdated,
+      lastActionTimestamp: this._videoState.lastActionTimestamp,
+      isHeartbeat,
+    };
   }
 
   /**
