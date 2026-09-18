@@ -106,13 +106,13 @@ export const HomePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-black text-gray-900 dark:text-white antialiased transition-colors">
+    <div className="min-h-screen flex flex-col items-center bg-gray-50 dark:bg-black text-gray-900 dark:text-white antialiased transition-colors w-full">
       {/* Sticky Glass Navbar */}
       <Navbar />
 
       {/* Main Content */}
-      <main className="w-full flex-1">
-        <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 sm:py-16 flex flex-col gap-y-12 sm:gap-y-14">
+      <main className="w-full flex-1 flex flex-col items-center">
+        <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 flex flex-col gap-y-12 sm:gap-y-14">
           {/* Hero Section */}
           <section className="flex flex-col items-center text-center">
             {/* Announcement Capsule */}
@@ -455,8 +455,8 @@ export const HomePage: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="w-full bg-white dark:bg-black border-t border-gray-200 dark:border-white/10 py-6 transition-colors">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <footer className="w-full bg-white dark:bg-black border-t border-gray-200 dark:border-white/10 py-6 transition-colors flex justify-center">
+        <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10">
               <span className="h-2 w-2 rounded-full bg-emerald-500"></span>

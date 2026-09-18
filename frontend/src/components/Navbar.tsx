@@ -37,8 +37,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-gray-200 dark:bg-black/50 dark:backdrop-blur-xl dark:border-white/10 transition-colors">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+    <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-gray-200 dark:bg-black/50 dark:backdrop-blur-xl dark:border-white/10 transition-colors flex justify-center">
+      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group shrink-0">
           <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-white/[0.08] border border-gray-200 dark:border-white/10 flex items-center justify-center transition-colors group-hover:border-cyan-500">

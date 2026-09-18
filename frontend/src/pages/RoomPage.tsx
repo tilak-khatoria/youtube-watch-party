@@ -440,9 +440,9 @@ export const RoomPage: React.FC = () => {
   // DIRECT LINK FALLBACK UI
   if (isDirectLinkFallback) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-black text-gray-900 dark:text-white transition-colors">
+      <div className="min-h-screen flex flex-col items-center bg-gray-50 dark:bg-black text-gray-900 dark:text-white transition-colors w-full">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center p-4">
+        <div className="flex-1 flex items-center justify-center p-4 w-full">
           <div className="rounded-2xl p-6 sm:p-8 max-w-md w-full border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] shadow-sm dark:shadow-none backdrop-blur-md animate-fade-in-up">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800/50 flex items-center justify-center text-cyan-600 dark:text-cyan-400 shadow-sm">
@@ -496,7 +496,7 @@ export const RoomPage: React.FC = () => {
 
   return (
     <ErrorBoundary fallbackTitle="Watch Room Encountered an Issue">
-      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-black text-gray-900 dark:text-white transition-colors">
+      <div className="min-h-screen flex flex-col items-center bg-gray-50 dark:bg-black text-gray-900 dark:text-white transition-colors w-full">
         <Navbar
           roomId={canonicalRoomId}
           username={username}
@@ -505,7 +505,7 @@ export const RoomPage: React.FC = () => {
         />
 
         {/* Main Party Room Workspace */}
-        <main className="flex-1 max-w-[1560px] w-full mx-auto p-3 sm:p-4 lg:p-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
+        <main className="flex-1 max-w-[1560px] w-full mx-auto p-3 sm:p-4 lg:p-6 flex flex-col lg:flex-row gap-4 sm:gap-6 justify-center">
           {/* Left / Center: YouTube Video Player Area */}
           <section className="flex-1 flex flex-col min-w-0">
             {/* Top Banner with Room info & Copy Share */}
