@@ -65,6 +65,9 @@ app.use(
 );
 app.use(express.json());
 
+// Health Check Route for Render deployment
+app.get('/health', (req, res) => res.status(200).send('OK'));
+
 // Initialize HTTP and Socket.IO Server
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -122,9 +125,9 @@ function checkRateLimit(
 // ==========================================
 
 /**
- * Health check & status endpoint
+ * Detailed status endpoint
  */
-app.get('/health', (_req: Request, res: Response) => {
+app.get('/status', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     service: 'YouTube Watch Party Server',
@@ -1378,11 +1381,11 @@ process.on('SIGTERM', () => clearInterval(heartbeatTimer));
 // Start Server
 // ==========================================
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`=========================================`);
   console.log(` YouTube Watch Party Backend Server (RBAC)`);
-  console.log(` Running on: http://localhost:${PORT}`);
-  console.log(` WebSocket:  ws://localhost:${PORT}`);
+  console.log(` Running on: http://0.0.0.0:${PORT}`);
+  console.log(` WebSocket:  ws://0.0.0.0:${PORT}`);
   console.log(`=========================================`);
 });
 
