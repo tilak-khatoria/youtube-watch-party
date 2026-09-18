@@ -32,8 +32,13 @@ import {
   Radio,
   User,
   Hand,
+  Bell,
+  Inbox,
+  CheckCircle2,
+  XCircle,
+  X,
 } from 'lucide-react';
-import type { FloatingReaction, ControlRequest, ToastAction } from '../types';
+import type { FloatingReaction, ControlRequest, ToastAction, ChangeRequest } from '../types';
 
 export const RoomPage: React.FC = () => {
   const { roomId: rawRoomId } = useParams<{ roomId: string }>();
@@ -115,6 +120,12 @@ export const RoomPage: React.FC = () => {
   const [reactions, setReactions] = useState<FloatingReaction[]>([]);
   const [lastControlRequestTime, setLastControlRequestTime] = useState<number>(0);
 
+  // Request Flow State (Viewer -> Host / Mod approvals)
+  const [pendingRequests, setPendingRequests] = useState<ChangeRequest[]>([]);
+  const [isRequestsModalOpen, setIsRequestsModalOpen] = useState<boolean>(false);
+  const [isSuggestModalOpen, setIsSuggestModalOpen] = useState<boolean>(false);
+  const [suggestVideoUrl, setSuggestVideoUrl] = useState<string>('');
+
   // Helper to add toast notifications safely with optional interactive actions
   const addToast = useCallback(
     (
@@ -152,18 +163,18 @@ export const RoomPage: React.FC = () => {
     }
 
     const socket = getSocket();
+    const storedCreatorToken = localStorage.getItem(`syncparty_room_${canonicalRoomId}_creatorToken`) || undefined;
 
     // 1. Connection lifecycle
     socket.on('connect', () => {
       console.log('[Socket Connected]:', socket.id);
       setCurrentUserId(socket.id || '');
 
-      // Join the canonical room with verified role request if Host
+      // Join the canonical room with verified creatorToken if creator/Host
       socket.emit('join_room', {
         roomId: canonicalRoomId,
         username,
-        role: isStoredHost ? 'Host' : undefined,
-        isCreator: isStoredHost,
+        creatorToken: storedCreatorToken,
         initialVideoId: initialResolvedVideoId || undefined,
         videoId: initialResolvedVideoId || undefined,
       });
@@ -175,18 +186,20 @@ export const RoomPage: React.FC = () => {
       socket.emit('join_room', {
         roomId: canonicalRoomId,
         username,
-        role: isStoredHost ? 'Host' : undefined,
-        isCreator: isStoredHost,
+        creatorToken: storedCreatorToken,
         initialVideoId: initialResolvedVideoId || undefined,
         videoId: initialResolvedVideoId || undefined,
       });
     }
 
     // 2. Room Joined confirmation
-    socket.on('room_joined', (data: { roomId: string; participant: ParticipantData; room: RoomData }) => {
+    socket.on('room_joined', (data: { roomId: string; participant: ParticipantData; room: RoomData; creatorToken?: string }) => {
       console.log('[Room Joined]:', data);
       if (data?.participant?.id) {
         setCurrentUserId(data.participant.id);
+      }
+      if (data?.creatorToken) {
+        localStorage.setItem(`syncparty_room_${canonicalRoomId}_creatorToken`, data.creatorToken);
       }
       if (data?.participant?.role) {
         setCurrentUserRole(data.participant.role);
@@ -394,6 +407,72 @@ export const RoomPage: React.FC = () => {
       addToast(data?.approved ? 'success' : 'warning', data?.message || 'Control request status updated.');
     });
 
+    // 14. Action Request Flow (Mandatory PDF requirement: Participant requests action approval)
+    socket.on('action_requested', (request: ChangeRequest) => {
+      setPendingRequests((prev) => {
+        if (prev.some((r) => r.requestId === request.requestId)) return prev;
+        return [...prev, request];
+      });
+
+      const actionDesc =
+        request.action === 'control'
+          ? 'requested playback control (promote to Moderator)'
+          : request.action === 'change_video'
+          ? `suggested new video: "${request.payload?.videoId || 'custom'}"`
+          : `requested action: ${request.action}`;
+
+      addToast(
+        'info',
+        `✋ ${request.username} ${actionDesc}!`,
+        [
+          {
+            label: 'Approve',
+            variant: 'success',
+            onClick: () => {
+              const s = getSocket();
+              s.emit('approve_request', {
+                requestId: request.requestId,
+                roomId: canonicalRoomId,
+              });
+              setPendingRequests((prev) => prev.filter((r) => r.requestId !== request.requestId));
+            },
+          },
+          {
+            label: 'Deny',
+            variant: 'danger',
+            onClick: () => {
+              const s = getSocket();
+              s.emit('reject_request', {
+                requestId: request.requestId,
+                roomId: canonicalRoomId,
+                reason: 'Declined by Host',
+              });
+              setPendingRequests((prev) => prev.filter((r) => r.requestId !== request.requestId));
+            },
+          },
+        ],
+        15000
+      );
+    });
+
+    socket.on('request_approved', (data: { requestId: string; action: string; message: string; username?: string }) => {
+      setPendingRequests((prev) => prev.filter((r) => r.requestId !== data.requestId));
+      addToast('success', data.message || `Request for ${data.action} was approved.`);
+    });
+
+    socket.on('request_rejected', (data: { requestId: string; action: string; reason?: string }) => {
+      setPendingRequests((prev) => prev.filter((r) => r.requestId !== data.requestId));
+      addToast('warning', data.reason || `Request for ${data.action} was declined.`);
+    });
+
+    socket.on('action_request_resolved', (data: { approved: boolean; message: string }) => {
+      addToast(data.approved ? 'success' : 'warning', data.message);
+    });
+
+    socket.on('request_submitted', (data: { message: string }) => {
+      addToast('info', data.message || 'Request submitted to Host.');
+    });
+
     return () => {
       socket.off('connect');
       socket.off('room_joined');
@@ -416,6 +495,11 @@ export const RoomPage: React.FC = () => {
       socket.off('control_requested');
       socket.off('control_request_sent');
       socket.off('control_request_resolved');
+      socket.off('action_requested');
+      socket.off('request_approved');
+      socket.off('request_rejected');
+      socket.off('action_request_resolved');
+      socket.off('request_submitted');
     };
   }, [canonicalRoomId, username, isDirectLinkFallback, isStoredHost, navigate, addToast]);
 
@@ -511,14 +595,49 @@ export const RoomPage: React.FC = () => {
 
   const handleRequestControl = () => {
     const now = Date.now();
-    if (now - lastControlRequestTime < 15000) {
-      const waitSec = Math.ceil((15000 - (now - lastControlRequestTime)) / 1000);
+    if (now - lastControlRequestTime < 10000) {
+      const waitSec = Math.ceil((10000 - (now - lastControlRequestTime)) / 1000);
       addToast('warning', `Please wait ${waitSec}s before requesting control again.`);
       return;
     }
     setLastControlRequestTime(now);
     const socket = getSocket();
+    socket.emit('request_action', { roomId: canonicalRoomId, action: 'control' });
     socket.emit('request_control', { roomId: canonicalRoomId });
+    addToast('info', 'Control request sent to Host! Awaiting approval...');
+  };
+
+  const handleSuggestVideoSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = suggestVideoUrl.trim();
+    if (!trimmed) return;
+    const extracted = extractYouTubeVideoId(trimmed);
+    const cleanId = extracted || trimmed;
+    const socket = getSocket();
+    socket.emit('request_action', {
+      roomId: canonicalRoomId,
+      action: 'change_video',
+      payload: { videoId: cleanId },
+    });
+    setIsSuggestModalOpen(false);
+    setSuggestVideoUrl('');
+    addToast('info', 'Video suggestion submitted to the Host for approval!');
+  };
+
+  const handleApprovePendingRequest = (requestId: string) => {
+    const socket = getSocket();
+    socket.emit('approve_request', { roomId: canonicalRoomId, requestId });
+    setPendingRequests((prev) => prev.filter((r) => r.requestId !== requestId));
+  };
+
+  const handleRejectPendingRequest = (requestId: string) => {
+    const socket = getSocket();
+    socket.emit('reject_request', {
+      roomId: canonicalRoomId,
+      requestId,
+      reason: 'Declined by Host',
+    });
+    setPendingRequests((prev) => prev.filter((r) => r.requestId !== requestId));
   };
 
   const handleLeaveRoom = () => {
@@ -635,6 +754,27 @@ export const RoomPage: React.FC = () => {
                     </>
                   )}
                 </button>
+
+                {isHostOrModerator && (
+                  <button
+                    type="button"
+                    onClick={() => setIsRequestsModalOpen(true)}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-sm ${
+                      pendingRequests.length > 0
+                        ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 animate-pulse'
+                        : 'bg-gray-100 dark:bg-white/[0.04] hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/10'
+                    }`}
+                    title="Review incoming control and video requests from participants"
+                  >
+                    <Bell className={`w-3.5 h-3.5 ${pendingRequests.length > 0 ? 'text-amber-400' : 'text-gray-400'}`} />
+                    <span>Requests</span>
+                    {pendingRequests.length > 0 && (
+                      <span className="ml-1 px-1.5 py-0.2 bg-amber-500 text-black text-[10px] font-bold rounded-full">
+                        {pendingRequests.length}
+                      </span>
+                    )}
+                  </button>
+                )}
               </div>
 
               {/* Role Notice Indicator */}
@@ -693,7 +833,7 @@ export const RoomPage: React.FC = () => {
                 </button>
               </form>
             ) : (
-              /* Informative status bar for Participants / Viewers with Request Control */
+              /* Informative status bar for Participants / Viewers with Suggest Video & Request Control */
               <div className="mb-3.5 px-4 py-2.5 rounded-2xl bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.08] shadow-sm dark:shadow-none flex items-center justify-between gap-3 text-xs text-gray-600 dark:text-gray-300 backdrop-blur-md transition-all duration-300 hover:border-cyan-500/30">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <Radio className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 animate-pulse shrink-0" />
@@ -709,6 +849,14 @@ export const RoomPage: React.FC = () => {
                   <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium bg-gray-100 dark:bg-white/[0.04] px-2.5 py-1 rounded-full border border-gray-200 dark:border-white/10 hidden sm:inline">
                     Watch Only Mode
                   </span>
+                  <button
+                    onClick={() => setIsSuggestModalOpen(true)}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-cyan-600/15 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 text-xs font-semibold shadow-sm transition-all duration-200 cursor-pointer hover:scale-[1.03] active:scale-[0.97]"
+                    title="Suggest a YouTube video for the room"
+                  >
+                    <Tv className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Suggest Video</span>
+                  </button>
                   <button
                     onClick={handleRequestControl}
                     className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-sm transition-all duration-200 cursor-pointer hover:scale-[1.03] active:scale-[0.97]"
@@ -734,6 +882,8 @@ export const RoomPage: React.FC = () => {
                 onPause={handlePause}
                 onSeek={handleSeek}
                 onChangeVideoClick={() => setIsVideoModalOpen(true)}
+                onRequestControl={handleRequestControl}
+                onSuggestVideoClick={() => setIsSuggestModalOpen(true)}
                 reactions={reactions}
               />
             </div>
@@ -797,6 +947,185 @@ export const RoomPage: React.FC = () => {
           onSelectVideo={handleChangeVideo}
           currentVideoId={videoState?.videoId || ''}
         />
+
+        {/* Pending Requests Modal (Host/Moderator Review) */}
+        {isRequestsModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+            <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-neutral-950/95 p-6 shadow-2xl backdrop-blur-xl flex flex-col gap-4 text-white">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                    <Inbox className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">Pending Participant Requests</h3>
+                    <p className="text-xs text-neutral-400">Approve or deny action requests from room members</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsRequestsModalOpen(false)}
+                  className="p-1.5 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="max-h-80 overflow-y-auto flex flex-col gap-2.5 py-1">
+                {pendingRequests.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-neutral-400 flex flex-col items-center gap-2">
+                    <Inbox className="w-8 h-8 opacity-40 text-neutral-500" />
+                    <span>No pending requests at this moment.</span>
+                  </div>
+                ) : (
+                  pendingRequests.map((req) => (
+                    <div
+                      key={req.requestId}
+                      className="p-3.5 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-between gap-3 hover:border-white/20 transition-all"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-white truncate">{req.username}</span>
+                          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                            {req.action === 'control' ? 'Playback Control' : req.action === 'change_video' ? 'Video Change' : req.action}
+                          </span>
+                        </div>
+                        {req.action === 'change_video' && req.payload?.videoId && (
+                          <p className="text-[11px] font-mono text-neutral-400 mt-1 truncate">
+                            Video ID: <span className="text-cyan-400">{req.payload.videoId}</span>
+                          </p>
+                        )}
+                        <span className="text-[10px] text-neutral-500 mt-0.5 block">
+                          {new Date(req.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleApprovePendingRequest(req.requestId)}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Approve</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRejectPendingRequest(req.requestId)}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/35 text-rose-300 border border-rose-500/40 text-xs font-semibold transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm"
+                        >
+                          <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                          <span>Deny</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="border-t border-white/10 pt-3 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsRequestsModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-semibold text-neutral-300 hover:text-white transition-all cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Suggest Video Modal (Participants) */}
+        {isSuggestModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+            <div className="w-full max-w-md rounded-2xl border border-white/10 bg-neutral-950/95 p-6 shadow-2xl backdrop-blur-xl flex flex-col gap-4 text-white">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                    <Tv className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">Suggest a Video</h3>
+                    <p className="text-xs text-neutral-400">Send recommendation to the Host for approval</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsSuggestModalOpen(false)}
+                  className="p-1.5 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSuggestVideoSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-300 mb-1.5">
+                    YouTube URL or Video ID <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative flex items-center">
+                    <PlaySquare className="w-4 h-4 text-neutral-500 absolute left-3.5 pointer-events-none" />
+                    <input
+                      type="text"
+                      autoFocus
+                      placeholder="e.g. https://youtu.be/dQw4w9WgXcQ or dQw4w9WgXcQ"
+                      value={suggestVideoUrl}
+                      onChange={(e) => setSuggestVideoUrl(e.target.value)}
+                      className="w-full rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono bg-white/5 text-white border border-white/10 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 placeholder:text-neutral-500 focus:outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Presets */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-neutral-400 mb-2">
+                    Or select a preset:
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { title: 'Synthwave Live', id: '4xDzrJKXOOY' },
+                      { title: 'Lofi Chill Girl', id: 'jfKfPfyJRdk' },
+                      { title: 'Big Buck Bunny', id: 'aqz-KE-bpKQ' },
+                      { title: 'Space Ambient', id: 'mwtbE4SANwc' },
+                    ].map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => setSuggestVideoUrl(preset.id)}
+                        className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-left transition-all cursor-pointer group"
+                      >
+                        <span className="text-[11px] font-medium text-neutral-300 group-hover:text-cyan-400 block truncate">
+                          {preset.title}
+                        </span>
+                        <span className="text-[9px] font-mono text-neutral-500 block truncate">
+                          {preset.id}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setIsSuggestModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-semibold text-neutral-300 hover:text-white transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!suggestVideoUrl.trim()}
+                    className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+                  >
+                    Submit Suggestion
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Floating Notifications */}
         <ToastContainer toasts={toasts || []} onDismiss={handleDismissToast} />

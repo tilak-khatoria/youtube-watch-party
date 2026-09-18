@@ -28,6 +28,7 @@ export interface RoomData {
 export interface JoinRoomPayload {
   roomId: string;
   username: string;
+  creatorToken?: string;
   role?: ParticipantRole;
   isCreator?: boolean;
   initialVideoId?: string;
@@ -128,3 +129,34 @@ export interface ControlResponsePayload {
   approve: boolean;
   roomId?: string;
 }
+
+export type ChangeRequestAction = 'control' | 'change_video' | 'seek' | 'play' | 'pause';
+
+export interface ChangeRequest {
+  requestId: string;
+  roomId: string;
+  userId: string;
+  username: string;
+  action: ChangeRequestAction;
+  payload?: any;
+  timestamp: number;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+export interface RequestActionPayload {
+  roomId?: string;
+  action: ChangeRequestAction;
+  payload?: any;
+}
+
+export interface ApproveRequestPayload {
+  roomId?: string;
+  requestId: string;
+}
+
+export interface RejectRequestPayload {
+  roomId?: string;
+  requestId: string;
+  reason?: string;
+}
+

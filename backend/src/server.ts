@@ -24,6 +24,10 @@ import {
   FloatingReaction,
   ControlRequest,
   ControlResponsePayload,
+  ChangeRequest,
+  RequestActionPayload,
+  ApproveRequestPayload,
+  RejectRequestPayload,
 } from './types';
 
 // Initialize Express App
@@ -179,6 +183,7 @@ app.post('/api/rooms', (req: Request, res: Response) => {
     success: true,
     message: 'Room created successfully',
     roomId: room.id,
+    creatorToken: room.creatorToken,
     room: room.getState(),
   });
 });
@@ -192,13 +197,14 @@ io.on('connection', (socket: Socket) => {
 
   /**
    * Event: join_room
-   * Payload: { roomId: string, username: string }
+   * Payload: { roomId: string, username: string, creatorToken?: string }
    * - Room creator / first user is auto-assigned 'Host' role
-   * - Subsequent users get 'Participant' role
+   * - Returning creator is authenticated via secret creatorToken
+   * - Subsequent users get 'Participant' role (client-supplied roles ignored)
    */
   socket.on('join_room', (payload: JoinRoomPayload) => {
     try {
-      const { roomId, username, role, isCreator, initialVideoId, videoId } = payload || {};
+      const { roomId, username, creatorToken, initialVideoId, videoId } = payload || {};
       if (!roomId || typeof roomId !== 'string') {
         socket.emit('error_message', { message: 'Invalid or missing roomId' });
         return;
@@ -212,13 +218,12 @@ io.on('connection', (socket: Socket) => {
 
       const cleanInitialVideoId = (initialVideoId || videoId || '').trim();
 
-      // Join room in RoomManager
+      // Join room in RoomManager (creatorToken used for Host auth; ignores client role claims)
       const { room, participant, isNewRoom } = roomManager.joinRoom(
         cleanRoomId,
         socket.id,
         cleanUsername,
-        role,
-        isCreator,
+        creatorToken,
         cleanInitialVideoId || undefined
       );
 
@@ -229,20 +234,22 @@ io.on('connection', (socket: Socket) => {
         `[User Joined] Room: ${cleanRoomId} | User: ${participant.username} (${participant.id}) | Role: ${participant.role} | IsNew: ${isNewRoom}`
       );
 
-      // 1. Confirm join to the client with participant details and room state
+      // 1. Confirm join to client with participant details, room state, and creatorToken if Host
       socket.emit('room_joined', {
         roomId: cleanRoomId,
         participant: participant.toJSON(),
         room: room.getState(),
+        creatorToken: participant.isHost() ? room.creatorToken : undefined,
       });
 
       // 2. Immediately send fully computed current video state to syncing user so late-joiners never buffer
       socket.emit('sync_state', room.getSyncPayload());
 
       // 3. Notify other participants in the room that someone joined
+      // Exact PDF Table: { username, userId, role, participants }
       const joinedPayload = {
-        userId: participant.id,
         username: participant.username,
+        userId: participant.id,
         role: participant.role,
         participants: room.getParticipants().map((p) => p.toJSON()),
         participant: participant.toJSON(),
@@ -314,6 +321,7 @@ io.on('connection', (socket: Socket) => {
         playState: 'playing',
         currentTime,
       });
+      roomManager.saveRoomState(room);
 
       console.log(
         `[Play] Room: ${room.id} | Time: ${currentTime}s | Triggered by: ${participant?.username} (${participant?.role})`
@@ -372,6 +380,7 @@ io.on('connection', (socket: Socket) => {
         playState: 'paused',
         currentTime,
       });
+      roomManager.saveRoomState(room);
 
       console.log(
         `[Pause] Room: ${room.id} | Time: ${currentTime}s | Triggered by: ${participant?.username} (${participant?.role})`
@@ -396,7 +405,7 @@ io.on('connection', (socket: Socket) => {
 
   /**
    * Event: seek
-   * Payload: { roomId?: string, currentTime: number }
+   * Payload: { roomId?: string, currentTime?: number, time?: number }
    * Permissions: Host, Moderator
    */
   socket.on('seek', (payload: SeekPayload) => {
@@ -432,6 +441,7 @@ io.on('connection', (socket: Socket) => {
       room.updateVideoState({
         currentTime: targetTime,
       });
+      roomManager.saveRoomState(room);
 
       console.log(
         `[Seek] Room: ${room.id} | Seeked to: ${targetTime}s | Triggered by: ${participant?.username} (${participant?.role})`
@@ -492,6 +502,7 @@ io.on('connection', (socket: Socket) => {
         currentTime: 0,
         playState: 'playing',
       });
+      roomManager.saveRoomState(room);
 
       console.log(
         `[Change Video] Room: ${room.id} | Video: ${cleanVideoId} | Triggered by: ${participant?.username} (${participant?.role})`
@@ -619,10 +630,11 @@ io.on('connection', (socket: Socket) => {
 
       // 1. Broadcast role_assigned event to all users in the room
       io.to(room.id).emit('role_assigned', {
-        roomId: room.id,
         userId: targetParticipant.id,
         username: targetParticipant.username,
         role: targetParticipant.role,
+        participants: room.getParticipants().map((p) => p.toJSON()),
+        roomId: room.id,
         previousRole: result.previousRole,
         hostTransferred: !!result.hostTransferred,
         assignedBy: hostParticipant?.toJSON(),
@@ -631,6 +643,7 @@ io.on('connection', (socket: Socket) => {
 
       // 2. If Host was transferred, also emit host_changed
       if (result.hostTransferred) {
+        roomManager.saveRoomState(room);
         io.to(room.id).emit('host_changed', {
           roomId: room.id,
           newHostId: targetParticipant.id,
@@ -694,6 +707,7 @@ io.on('connection', (socket: Socket) => {
 
       // Unlink from RoomManager
       roomManager.unlinkSocket(removedUser.id);
+      roomManager.saveRoomState(room);
 
       console.log(
         `[Participant Removed] Room: ${room.id} | User: ${removedUser.username} (${removedUser.id}) | Kicked by: ${hostParticipant?.username}`
@@ -712,8 +726,9 @@ io.on('connection', (socket: Socket) => {
 
       // 1. Broadcast participant_removed to remaining users in room
       io.to(room.id).emit('participant_removed', {
-        roomId: room.id,
         userId: removedUser.id,
+        participants: room.getParticipants().map((p) => p.toJSON()),
+        roomId: room.id,
         username: removedUser.username,
         removedBy: hostParticipant?.toJSON(),
         message: `${removedUser.username} was removed from the party by ${hostParticipant?.username || 'the Host'}.`,
@@ -963,6 +978,311 @@ io.on('connection', (socket: Socket) => {
       }
     } catch (err: any) {
       console.error(`[Error in respond_control_request]:`, err);
+    }
+  });
+
+  // ==========================================
+  // Assignment Mandatory 'Request' Flow
+  // "Participant must request admin/mod to approve any changes for them to come into action"
+  // ==========================================
+
+  /**
+   * Event: request_action (Participant requests Host/Moderator to approve an action)
+   * Payload: { roomId?: string, action: 'control' | 'change_video' | 'play' | 'pause' | 'seek', payload?: any }
+   */
+  socket.on('request_action', (payload: RequestActionPayload) => {
+    try {
+      if (!payload || !payload.action) {
+        return socket.emit('error_message', { message: 'Action type is required for request_action' });
+      }
+
+      const room = payload.roomId
+        ? roomManager.getRoom(payload.roomId)
+        : roomManager.getRoomBySocketId(socket.id);
+
+      if (!room) {
+        return socket.emit('error_message', { message: 'Room not found' });
+      }
+
+      const participant = room.getParticipant(socket.id);
+      if (!participant) return;
+
+      // If user already has permission for control actions, no need to request
+      if (payload.action === 'control' && participant.canControlPlayback()) {
+        return socket.emit('error_message', { message: 'You already possess playback control permissions.' });
+      }
+
+      // Rate limit / cooldown: 1 request every 8 seconds per socket
+      const now = Date.now();
+      const lastRequest = controlCooldownMap.get(socket.id) || 0;
+      if (now - lastRequest < 8000) {
+        const waitSec = Math.ceil((8000 - (now - lastRequest)) / 1000);
+        return socket.emit('error_message', {
+          message: `Please wait ${waitSec}s before submitting another request.`,
+        });
+      }
+      controlCooldownMap.set(socket.id, now);
+
+      const requestId = `req_${now}_${Math.random().toString(36).substring(2, 6)}`;
+      const request: ChangeRequest = {
+        requestId,
+        roomId: room.id,
+        userId: participant.id,
+        username: participant.username,
+        action: payload.action,
+        payload: payload.payload,
+        timestamp: now,
+        status: 'pending',
+      };
+
+      room.addChangeRequest(request);
+
+      console.log(
+        `[Action Requested] Room: ${room.id} | User: ${participant.username} | Action: ${payload.action}`
+      );
+
+      // Broadcast action_requested to Host
+      const hostSocket = io.sockets.sockets.get(room.hostId);
+      if (hostSocket) {
+        hostSocket.emit('action_requested', request);
+      }
+
+      // Broadcast action_requested to other Moderators
+      for (const p of room.getParticipants()) {
+        if (p.isModerator() && p.id !== room.hostId && p.id !== socket.id) {
+          const modSocket = io.sockets.sockets.get(p.id);
+          modSocket?.emit('action_requested', request);
+        }
+      }
+
+      // Confirm submission to requester
+      socket.emit('request_submitted', {
+        success: true,
+        message: `Your request for "${payload.action}" was sent to the Host for approval!`,
+        request,
+      });
+    } catch (err: any) {
+      console.error('[Error in request_action]:', err);
+    }
+  });
+
+  /**
+   * Event: approve_request (Host/Moderator approves a pending action request)
+   * Payload: { roomId?: string, requestId: string }
+   */
+  socket.on('approve_request', (payload: ApproveRequestPayload) => {
+    try {
+      if (!payload || !payload.requestId) return;
+
+      const room = payload.roomId
+        ? roomManager.getRoom(payload.roomId)
+        : roomManager.getRoomBySocketId(socket.id);
+
+      if (!room) return;
+
+      // RBAC Check: Host or Moderator only
+      if (!room.canControlPlayback(socket.id)) {
+        return rejectAction(
+          socket,
+          'approve_request',
+          'Forbidden: Only the Room Host and Moderators can approve requests.',
+          ['Host', 'Moderator']
+        );
+      }
+
+      const request = room.getChangeRequest(payload.requestId);
+      if (!request) {
+        return socket.emit('error_message', { message: 'Request not found or already processed.' });
+      }
+
+      const approver = room.getParticipant(socket.id);
+      const requester = room.getParticipant(request.userId);
+
+      request.status = 'approved';
+      room.removeChangeRequest(payload.requestId);
+
+      console.log(
+        `[Request Approved] Req: ${request.requestId} | Action: ${request.action} | Approved by: ${approver?.username}`
+      );
+
+      // Execute action based on requested action type
+      if (request.action === 'control' && requester) {
+        // Promote requester to Moderator
+        const assignResult = room.assignRole(requester.id, 'Moderator', socket.id);
+        if (assignResult.success) {
+          io.to(room.id).emit('role_assigned', {
+            userId: requester.id,
+            username: requester.username,
+            role: 'Moderator',
+            participants: room.getParticipants().map((p) => p.toJSON()),
+            roomId: room.id,
+            previousRole: assignResult.previousRole,
+            assignedBy: approver?.toJSON(),
+            message: `${requester.username} was granted playback control (promoted to Moderator)!`,
+          });
+          io.to(room.id).emit('participants_updated', {
+            participants: room.getParticipants().map((p) => p.toJSON()),
+            hostId: room.hostId,
+          });
+        }
+      } else if (request.action === 'change_video' && request.payload?.videoId) {
+        const cleanVid = String(request.payload.videoId).trim();
+        room.updateVideoState({
+          videoId: cleanVid,
+          currentTime: 0,
+          playState: 'playing',
+        });
+        roomManager.saveRoomState(room);
+
+        const eventData = {
+          roomId: room.id,
+          videoId: cleanVid,
+          currentTime: 0,
+          playState: 'playing',
+          lastUpdated: Date.now(),
+          changedBy: requester?.toJSON() || approver?.toJSON(),
+          room: room.getState(),
+        };
+        io.to(room.id).emit('video_changed', eventData);
+        io.to(room.id).emit('sync_state', eventData);
+      } else if (request.action === 'play') {
+        const time =
+          typeof request.payload?.time === 'number'
+            ? request.payload.time
+            : room.videoState.currentTime;
+        room.updateVideoState({ playState: 'playing', currentTime: time });
+        roomManager.saveRoomState(room);
+
+        const eventData = {
+          roomId: room.id,
+          videoId: room.videoState.videoId,
+          currentTime: time,
+          playState: 'playing',
+          lastUpdated: Date.now(),
+          triggeredBy: requester?.toJSON() || approver?.toJSON(),
+        };
+        io.to(room.id).emit('play', eventData);
+        io.to(room.id).emit('sync_state', eventData);
+      } else if (request.action === 'pause') {
+        const time =
+          typeof request.payload?.time === 'number'
+            ? request.payload.time
+            : room.videoState.currentTime;
+        room.updateVideoState({ playState: 'paused', currentTime: time });
+        roomManager.saveRoomState(room);
+
+        const eventData = {
+          roomId: room.id,
+          videoId: room.videoState.videoId,
+          currentTime: time,
+          playState: 'paused',
+          lastUpdated: Date.now(),
+          triggeredBy: requester?.toJSON() || approver?.toJSON(),
+        };
+        io.to(room.id).emit('pause', eventData);
+        io.to(room.id).emit('sync_state', eventData);
+      } else if (request.action === 'seek') {
+        const targetTime =
+          typeof request.payload?.time === 'number'
+            ? request.payload.time
+            : typeof request.payload?.currentTime === 'number'
+            ? request.payload.currentTime
+            : 0;
+        room.updateVideoState({ currentTime: targetTime });
+        roomManager.saveRoomState(room);
+
+        const eventData = {
+          roomId: room.id,
+          videoId: room.videoState.videoId,
+          currentTime: targetTime,
+          playState: room.videoState.playState,
+          lastUpdated: room.videoState.lastUpdated,
+          lastActionTimestamp: room.videoState.lastActionTimestamp,
+          triggeredBy: requester?.toJSON() || approver?.toJSON(),
+        };
+        io.to(room.id).emit('seek', eventData);
+        io.to(room.id).emit('sync_state', eventData);
+      }
+
+      // Notify the room of approval
+      io.to(room.id).emit('request_approved', {
+        requestId: request.requestId,
+        action: request.action,
+        userId: request.userId,
+        username: request.username,
+        approvedBy: approver?.toJSON(),
+        message: `Request for "${request.action}" by ${request.username} was approved.`,
+      });
+
+      // Direct message to requester
+      const requesterSocket = io.sockets.sockets.get(request.userId);
+      requesterSocket?.emit('action_request_resolved', {
+        requestId: request.requestId,
+        action: request.action,
+        approved: true,
+        message: `🎉 Your request for "${request.action}" was approved!`,
+      });
+    } catch (err: any) {
+      console.error('[Error in approve_request]:', err);
+    }
+  });
+
+  /**
+   * Event: reject_request (Host/Moderator denies a pending action request)
+   * Payload: { roomId?: string, requestId: string, reason?: string }
+   */
+  socket.on('reject_request', (payload: RejectRequestPayload) => {
+    try {
+      if (!payload || !payload.requestId) return;
+
+      const room = payload.roomId
+        ? roomManager.getRoom(payload.roomId)
+        : roomManager.getRoomBySocketId(socket.id);
+
+      if (!room) return;
+
+      // RBAC Check: Host or Moderator only
+      if (!room.canControlPlayback(socket.id)) {
+        return rejectAction(
+          socket,
+          'reject_request',
+          'Forbidden: Only the Room Host and Moderators can reject requests.',
+          ['Host', 'Moderator']
+        );
+      }
+
+      const request = room.getChangeRequest(payload.requestId);
+      if (!request) return;
+
+      const rejecter = room.getParticipant(socket.id);
+      request.status = 'rejected';
+      room.removeChangeRequest(payload.requestId);
+
+      console.log(
+        `[Request Rejected] Req: ${request.requestId} | Action: ${request.action} | Rejected by: ${rejecter?.username}`
+      );
+
+      // Direct notification to requester
+      const requesterSocket = io.sockets.sockets.get(request.userId);
+      requesterSocket?.emit('action_request_resolved', {
+        requestId: request.requestId,
+        action: request.action,
+        approved: false,
+        reason: payload.reason || 'Declined by Host.',
+        message: `Your request for "${request.action}" was declined.`,
+      });
+
+      // Broadcast rejection notice to host/mods
+      io.to(room.id).emit('request_rejected', {
+        requestId: request.requestId,
+        action: request.action,
+        userId: request.userId,
+        username: request.username,
+        rejectedBy: rejecter?.toJSON(),
+        reason: payload.reason,
+      });
+    } catch (err: any) {
+      console.error('[Error in reject_request]:', err);
     }
   });
 

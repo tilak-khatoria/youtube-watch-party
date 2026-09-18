@@ -13,6 +13,7 @@ import {
   RefreshCw,
   RotateCcw,
   Film,
+  Hand,
 } from 'lucide-react';
 
 interface YouTubePlayerProps {
@@ -26,6 +27,8 @@ interface YouTubePlayerProps {
   onPause: (time: number) => void;
   onSeek: (time: number) => void;
   onChangeVideoClick: () => void;
+  onRequestControl?: () => void;
+  onSuggestVideoClick?: () => void;
   reactions?: import('../types').FloatingReaction[];
 }
 
@@ -47,6 +50,8 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
   onPause,
   onSeek,
   onChangeVideoClick,
+  onRequestControl,
+  onSuggestVideoClick,
   reactions = [],
 }) => {
   const playerRef = useRef<any>(null);
@@ -527,12 +532,26 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
                 )}
               </button>
             ) : (
-              <div
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.05] border border-white/10 text-neutral-400 text-xs cursor-not-allowed font-medium"
-                title="Only Host/Moderators can control playback"
-              >
-                <Lock className="w-3.5 h-3.5 text-neutral-400" />
-                <span className="text-[11px]">Watch Only</span>
+              <div className="flex items-center gap-1.5">
+                {onRequestControl ? (
+                  <button
+                    type="button"
+                    onClick={onRequestControl}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/35 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm"
+                    title="Request permission from Host to control playback"
+                  >
+                    <Hand className="w-3.5 h-3.5 text-cyan-400" />
+                    <span className="text-[11px]">Request Control</span>
+                  </button>
+                ) : (
+                  <div
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.05] border border-white/10 text-neutral-400 text-xs cursor-not-allowed font-medium"
+                    title="Only Host/Moderators can control playback"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-neutral-400" />
+                    <span className="text-[11px]">Watch Only</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -571,7 +590,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
               <span className="hidden sm:inline text-[11px]">Resync</span>
             </button>
 
-            {isHostOrModerator && (
+            {isHostOrModerator ? (
               <button
                 onClick={onChangeVideoClick}
                 title="Change Video for Room"
@@ -580,7 +599,17 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
                 <Tv className="w-3.5 h-3.5 text-cyan-400" />
                 <span className="text-[11px]">Change Video</span>
               </button>
-            )}
+            ) : onSuggestVideoClick ? (
+              <button
+                type="button"
+                onClick={onSuggestVideoClick}
+                title="Suggest a video to the Host"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-cyan-600/15 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+              >
+                <Tv className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="text-[11px]">Suggest Video</span>
+              </button>
+            ) : null}
 
             <button
               onClick={handleFullscreen}

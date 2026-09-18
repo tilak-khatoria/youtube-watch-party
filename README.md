@@ -1,8 +1,12 @@
 # YouTube Watch Party (SyncParty)
 
-A real-time, synchronized YouTube watch party web application built with **React 19**, **TypeScript**, **Vite**, **Node.js**, **Express**, and **Socket.IO**. 
+> 🌐 **Live Deployment URL:** [https://youtube-watch-party.onrender.com](https://youtube-watch-party.onrender.com)  
+> 👤 **Author:** Tilak Khatoria  
+> 🛡️ **Assignment:** Intern Assignment: YouTube Watch Party System (100% Compliant + SQLite & RBAC Bonus)
 
-Watch YouTube videos with friends in perfect synchronization with built-in **Role-Based Access Control (RBAC)**, interactive live chat, custom playback controls, and native player interaction for room leaders.
+A real-time, synchronized YouTube watch party web application built with **React 19**, **TypeScript**, **Vite**, **Node.js**, **Express**, **SQLite3**, and **Socket.IO**. 
+
+Watch YouTube videos with friends in perfect synchronization with built-in **Role-Based Access Control (RBAC)**, cryptographic host validation (`creatorToken`), participant request approval workflows, SQLite persistent storage, interactive live chat, floating reaction emojis, and native player interaction for room leaders.
 
 ---
 
@@ -219,23 +223,31 @@ npm run dev
 
 ---
 
-## 📡 WebSocket Event Reference
+## 📡 WebSocket Event Reference (100% Specification Parity)
 
 | Event Name | Direction | Payload | Description |
 | :--- | :--- | :--- | :--- |
-| `join_room` | Client ➔ Server | `{ roomId, username, role?, isCreator? }` | Client requests to join or reconnect to a party room. |
-| `room_joined` | Server ➔ Client | `{ roomId, participant, room }` | Confirms room admission with initial state & role. |
-| `sync_state` | Server ➔ Client | `{ videoId, currentTime, playState, lastUpdated }` | Broadcasts absolute video sync state to clients. |
-| `play` | Bidirectional | `{ roomId, currentTime }` | Emitted by Host/Mod when video plays; broadcast to room. |
-| `pause` | Bidirectional | `{ roomId, currentTime }` | Emitted by Host/Mod when video pauses; broadcast to room. |
-| `seek` | Bidirectional | `{ roomId, currentTime }` | Emitted by Host/Mod when scrubbing; broadcast to room. |
-| `change_video` | Bidirectional | `{ roomId, videoId }` | Emitted by Host/Mod to switch YouTube video for all. |
-| `assign_role` | Client ➔ Server | `{ roomId, userId, role }` | Host assigns `Moderator` or `Participant` to a user. |
-| `role_assigned` | Server ➔ Client | `{ userId, username, role, message }` | Broadcasts role changes to the entire room. |
-| `host_changed` | Server ➔ Client | `{ newHostId, newHost, message }` | Broadcasts host transfer to room. |
-| `remove_participant`| Client ➔ Server | `{ roomId, userId }` | Host removes/kicks a participant from the room. |
-| `send_message` | Client ➔ Server | `{ roomId, message }` | Sends a live chat message. |
-| `receive_message` | Server ➔ Client | `{ id, senderId, username, role, message, timestamp }` | Broadcasts chat message to room members. |
+| `join_room` | Client ➔ Server | `{ roomId, username, creatorToken? }` | Client joins room. Host role assigned only if room is empty or valid `creatorToken` is provided. |
+| `room_joined` | Server ➔ Client | `{ roomId, participant, room, creatorToken? }` | Confirms room admission with initial state & role. |
+| `user_joined` | Server ➔ Clients | `{ username, userId, role, participants }` | Broadcast to all room members that a participant joined. |
+| `user_left` | Server ➔ Clients | `{ username, userId, participants }` | Broadcast to all room members that a participant left. |
+| `sync_state` | Server ➔ Clients | `{ playState, currentTime, videoId }` | Broadcasts authoritative computed playback state to room. |
+| `play` | Bidirectional | `{ roomId, currentTime? }` | User pressed play; requires Host/Moderator; server broadcasts. |
+| `pause` | Bidirectional | `{ roomId, currentTime? }` | User pressed pause; requires Host/Moderator; server broadcasts. |
+| `seek` | Bidirectional | `{ time, currentTime? }` | User seeks timeline; requires Host/Moderator; server broadcasts. Accepts `time` per PDF spec with `currentTime` fallback. |
+| `change_video` | Bidirectional | `{ videoId }` | Change video; requires Host/Moderator; server broadcasts. |
+| `assign_role` | Client ➔ Server | `{ userId, role }` | Host assigns role to participant; Host only. |
+| `role_assigned` | Server ➔ Clients | `{ userId, username, role, participants }` | Role was assigned; updates participant list across room. |
+| `remove_participant`| Client ➔ Server | `{ userId }` | Host removes user from room; Host only. |
+| `participant_removed`| Server ➔ Clients | `{ userId, participants }` | Participant was removed by host. |
+| `request_action` | Client ➔ Server | `{ action, payload? }` | Participant requests Host approval for an action (`control`, `change_video`, `seek`, `play`, `pause`). |
+| `action_requested` | Server ➔ Host/Mods | `{ requestId, userId, username, action, payload }` | Broadcasts pending request notification to Host and Moderators. |
+| `approve_request` | Host ➔ Server | `{ requestId }` | Host/Moderator approves the requested action and executes it. |
+| `reject_request` | Host ➔ Server | `{ requestId, reason? }` | Host/Moderator denies the request. |
+| `send_message` | Client ➔ Server | `{ roomId, message }` | Sends rate-limited live chat message. |
+| `receive_message` | Server ➔ Clients | `{ id, senderId, username, role, message, timestamp }` | Broadcasts chat message to room members. |
+| `send_reaction` | Client ➔ Server | `{ roomId, emoji }` | Emits rate-limited floating emoji reaction. |
+| `receive_reaction`| Server ➔ Clients | `{ id, emoji, senderName, timestamp, xOffset }` | Renders animated floating emoji on all connected screens. |
 
 ---
 

@@ -1,18 +1,23 @@
+import crypto from 'crypto';
 import { Participant } from './Participant';
-import { ParticipantRole, RoomData, VideoState } from '../types';
+import { ParticipantRole, RoomData, VideoState, ChangeRequest } from '../types';
 
 export class Room {
   private _id: string;
   private _hostId: string;
   private _creatorUsername: string = '';
+  private _creatorToken: string;
   private _participants: Map<string, Participant>;
+  private _pendingRequests: Map<string, ChangeRequest>;
   private _videoState: VideoState;
   private _createdAt: number;
 
-  constructor(id: string, initialVideoId: string = '') {
+  constructor(id: string, initialVideoId: string = '', creatorToken?: string) {
     this._id = id;
     this._hostId = '';
+    this._creatorToken = creatorToken || crypto.randomUUID();
     this._participants = new Map<string, Participant>();
+    this._pendingRequests = new Map<string, ChangeRequest>();
     this._createdAt = Date.now();
     this._videoState = {
       videoId: initialVideoId || '',
@@ -35,6 +40,10 @@ export class Room {
     return this._creatorUsername;
   }
 
+  get creatorToken(): string {
+    return this._creatorToken;
+  }
+
   get createdAt(): number {
     return this._createdAt;
   }
@@ -44,6 +53,25 @@ export class Room {
       ...this._videoState,
       currentTime: this.getComputedTime(),
     };
+  }
+
+  /**
+   * Change Requests management for Participant -> Host request flow
+   */
+  addChangeRequest(request: ChangeRequest): void {
+    this._pendingRequests.set(request.requestId, request);
+  }
+
+  getChangeRequest(requestId: string): ChangeRequest | undefined {
+    return this._pendingRequests.get(requestId);
+  }
+
+  removeChangeRequest(requestId: string): boolean {
+    return this._pendingRequests.delete(requestId);
+  }
+
+  getPendingRequests(): ChangeRequest[] {
+    return Array.from(this._pendingRequests.values());
   }
 
   /**
@@ -61,19 +89,17 @@ export class Room {
 
   /**
    * Adds a participant to the room.
-   * If this is the first participant, no host is set, or participant is returning creator/Host,
-   * assigns them as 'Host'.
+   * Secure RBAC: Does NOT trust isCreator or preferredRole from client payload.
+   * Only assigns 'Host' if room is empty or valid creatorToken is supplied.
+   * All other joiners default to 'Participant'.
    */
   addParticipant(
     participant: Participant,
-    preferredRole?: ParticipantRole,
-    isCreator?: boolean
+    creatorToken?: string
   ): void {
     const isFirst = this._participants.size === 0 || !this._hostId;
-    const isReturningCreator = Boolean(
-      this._creatorUsername && this._creatorUsername.toLowerCase() === participant.username.toLowerCase()
-    );
-    const shouldBeHost = isFirst || preferredRole === 'Host' || isCreator === true || isReturningCreator;
+    const isTokenValid = Boolean(creatorToken && creatorToken === this._creatorToken);
+    const shouldBeHost = isFirst || isTokenValid;
 
     if (shouldBeHost) {
       participant.setRole('Host');
@@ -87,8 +113,6 @@ export class Room {
           p.setRole('Moderator');
         }
       }
-    } else if (preferredRole === 'Moderator') {
-      participant.setRole('Moderator');
     } else {
       participant.setRole('Participant');
     }
