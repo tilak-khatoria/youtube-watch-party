@@ -60,10 +60,11 @@ export const RoomPage: React.FC = () => {
   // Direct link detection: if navigated directly to /room/:roomId where username is undefined
   const isDirectLink = !routeUsername;
 
-  const rawVideoId = routeState?.videoId || routeState?.initialVideoId;
+  const storedVideoId = localStorage.getItem(`syncparty_room_${canonicalRoomId}_videoId`) || '';
+  const rawVideoId = routeState?.videoId || routeState?.initialVideoId || storedVideoId;
   const initialResolvedVideoId = (rawVideoId && typeof rawVideoId === 'string')
     ? (extractYouTubeVideoId(rawVideoId) || rawVideoId.trim())
-    : 'dQw4w9WgXcQ';
+    : '';
 
   // State Management: username & direct link fallback
   const [username, setUsername] = useState<string>(routeUsername);
@@ -91,10 +92,10 @@ export const RoomPage: React.FC = () => {
     isStoredHost ? 'Host' : 'Participant'
   );
 
-  // Room & Video State (Never undefined)
+  // Room & Video State (Never undefined, no hardcoded Rickroll default)
   const [participants, setParticipants] = useState<ParticipantData[]>([]);
   const [videoState, setVideoState] = useState<VideoState>({
-    videoId: initialResolvedVideoId || 'dQw4w9WgXcQ',
+    videoId: initialResolvedVideoId || '',
     currentTime: 0,
     playState: 'paused',
     lastUpdated: Date.now(),
@@ -149,6 +150,8 @@ export const RoomPage: React.FC = () => {
         username,
         role: isStoredHost ? 'Host' : undefined,
         isCreator: isStoredHost,
+        initialVideoId: initialResolvedVideoId || undefined,
+        videoId: initialResolvedVideoId || undefined,
       });
     });
 
@@ -160,6 +163,8 @@ export const RoomPage: React.FC = () => {
         username,
         role: isStoredHost ? 'Host' : undefined,
         isCreator: isStoredHost,
+        initialVideoId: initialResolvedVideoId || undefined,
+        videoId: initialResolvedVideoId || undefined,
       });
     }
 
@@ -186,6 +191,7 @@ export const RoomPage: React.FC = () => {
           playState: data.room.videoState.playState || 'paused',
           lastUpdated: data.room.videoState.lastUpdated || Date.now(),
         });
+        localStorage.setItem(`syncparty_room_${canonicalRoomId}_videoId`, data.room.videoState.videoId);
       }
       addToast('success', `Joined room ${data?.roomId || canonicalRoomId} as ${data?.participant?.role || 'Participant'}`);
     });
@@ -220,10 +226,11 @@ export const RoomPage: React.FC = () => {
       if (data?.videoId) {
         setVideoState({
           videoId: data.videoId,
-          currentTime: data.currentTime || 0,
+          currentTime: typeof data.currentTime === 'number' ? data.currentTime : 0,
           playState: data.playState || 'paused',
           lastUpdated: data.lastUpdated || Date.now(),
         });
+        localStorage.setItem(`syncparty_room_${canonicalRoomId}_videoId`, data.videoId);
       }
     });
 
@@ -267,6 +274,7 @@ export const RoomPage: React.FC = () => {
           playState: 'playing',
           lastUpdated: Date.now(),
         });
+        localStorage.setItem(`syncparty_room_${canonicalRoomId}_videoId`, data.videoId);
         addToast('info', `🎬 Video changed by ${data?.changedBy?.username || 'Host'}`);
       }
     });
@@ -596,7 +604,7 @@ export const RoomPage: React.FC = () => {
                   <span>
                     Watching live with party • Video ID:{' '}
                     <code className="text-cyan-600 dark:text-cyan-400 font-mono font-semibold">
-                      {videoState?.videoId || 'dQw4w9WgXcQ'}
+                      {videoState?.videoId || 'None'}
                     </code>
                   </span>
                 </div>
@@ -609,7 +617,7 @@ export const RoomPage: React.FC = () => {
             {/* YouTube Video Player Component */}
             <div className="flex-1 w-full min-h-[420px] sm:min-h-[520px]">
               <YouTubePlayer
-                videoId={videoState?.videoId || 'dQw4w9WgXcQ'}
+                videoId={videoState?.videoId || ''}
                 currentTime={videoState?.currentTime || 0}
                 playState={videoState?.playState || 'paused'}
                 lastUpdated={videoState?.lastUpdated}
@@ -678,7 +686,7 @@ export const RoomPage: React.FC = () => {
           isOpen={isVideoModalOpen}
           onClose={() => setIsVideoModalOpen(false)}
           onSelectVideo={handleChangeVideo}
-          currentVideoId={videoState?.videoId || 'dQw4w9WgXcQ'}
+          currentVideoId={videoState?.videoId || ''}
         />
 
         {/* Floating Notifications */}

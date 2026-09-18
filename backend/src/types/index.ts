@@ -29,6 +29,8 @@ export interface JoinRoomPayload {
   username: string;
   role?: ParticipantRole;
   isCreator?: boolean;
+  initialVideoId?: string;
+  videoId?: string;
 }
 
 export interface LeaveRoomPayload {

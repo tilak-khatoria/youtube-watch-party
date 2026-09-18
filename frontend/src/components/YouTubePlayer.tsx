@@ -12,6 +12,7 @@ import {
   Sparkles,
   RefreshCw,
   RotateCcw,
+  Film,
 } from 'lucide-react';
 
 interface YouTubePlayerProps {
@@ -117,7 +118,8 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
 
       viewportRef.current.innerHTML = '<div id="yt-player-target" style="width:100%;height:100%;position:absolute;inset:0"></div>';
 
-      const safeVideoId = extractYouTubeVideoId(videoId) || videoId || 'dQw4w9WgXcQ';
+      const safeVideoId = extractYouTubeVideoId(videoId) || videoId || '';
+      if (!safeVideoId) return;
 
       try {
         playerRef.current = new window.YT.Player('yt-player-target', {
@@ -205,7 +207,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
         playerRef.current = null;
       }
     };
-  }, [executeProgrammaticUpdate]);
+  }, [videoId, executeProgrammaticUpdate]);
 
   // 2. Programmatic Sync: Video ID change
   useEffect(() => {
@@ -381,7 +383,7 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
         />
 
         {/* Transparent overlay: strictly for Participant or Viewer */}
-        {isParticipantOrViewer && (
+        {isParticipantOrViewer && videoId && (
           <div
             id="participant-overlay"
             data-testid="participant-overlay"
@@ -389,6 +391,30 @@ export const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
             style={{ pointerEvents: 'none' }}
             title="Watch Only: Playback is synchronized with the Host and Moderators."
           />
+        )}
+
+        {/* Empty Video State Placeholder */}
+        {!videoId && (
+          <div className="absolute inset-0 z-25 flex flex-col items-center justify-center p-6 text-center bg-black/90 backdrop-blur-sm">
+            <div className="w-14 h-14 rounded-2xl bg-cyan-950/40 border border-cyan-800/50 flex items-center justify-center text-cyan-400 mb-4 shadow-sm">
+              <Film className="w-7 h-7" />
+            </div>
+            <h3 className="text-base font-semibold text-white">No Video Loaded</h3>
+            <p className="text-xs text-gray-400 mt-1 max-w-sm">
+              {canControl
+                ? 'Paste a YouTube URL or ID above or choose from presets to start the watch party.'
+                : 'Waiting for the Host to choose a video...'}
+            </p>
+            {canControl && onChangeVideoClick && (
+              <button
+                type="button"
+                onClick={onChangeVideoClick}
+                className="mt-4 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
+              >
+                Select Video
+              </button>
+            )}
+          </div>
         )}
 
         {/* Status Overlay Badges */}

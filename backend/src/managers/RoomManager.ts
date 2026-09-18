@@ -6,10 +6,12 @@ export class RoomManager {
   private static instance: RoomManager;
   private rooms: Map<string, Room>;
   private socketToRoomMap: Map<string, string>; // socketId -> roomId
+  private roomCleanupTimers: Map<string, NodeJS.Timeout>; // roomId -> cleanup timer
 
   constructor() {
     this.rooms = new Map<string, Room>();
     this.socketToRoomMap = new Map<string, string>();
+    this.roomCleanupTimers = new Map<string, NodeJS.Timeout>();
   }
 
   public static getInstance(): RoomManager {
@@ -38,10 +40,14 @@ export class RoomManager {
     const id = roomId ? roomId.trim() : this.generateRoomCode();
     
     if (this.rooms.has(id)) {
-      return this.rooms.get(id)!;
+      const existing = this.rooms.get(id)!;
+      if (initialVideoId && !existing.videoState.videoId) {
+        existing.updateVideoState({ videoId: initialVideoId });
+      }
+      return existing;
     }
 
-    const room = new Room(id, initialVideoId);
+    const room = new Room(id, initialVideoId || '');
     this.rooms.set(id, room);
     return room;
   }
@@ -59,6 +65,9 @@ export class RoomManager {
   public getOrCreateRoom(roomId: string, initialVideoId?: string): { room: Room; isNew: boolean } {
     const existingRoom = this.rooms.get(roomId);
     if (existingRoom) {
+      if (initialVideoId && !existingRoom.videoState.videoId) {
+        existingRoom.updateVideoState({ videoId: initialVideoId });
+      }
       return { room: existingRoom, isNew: false };
     }
     const newRoom = this.createRoom(roomId, initialVideoId);
@@ -82,7 +91,8 @@ export class RoomManager {
     socketId: string,
     username: string,
     preferredRole?: ParticipantRole,
-    isCreator?: boolean
+    isCreator?: boolean,
+    initialVideoId?: string
   ): { room: Room; participant: Participant; isNewRoom: boolean } {
     // If socket is already in another room, leave it first
     const currentRoomId = this.socketToRoomMap.get(socketId);
@@ -90,7 +100,17 @@ export class RoomManager {
       this.leaveRoom(socketId);
     }
 
-    const { room, isNew } = this.getOrCreateRoom(roomId);
+    // Cancel any scheduled deletion timer if room is being re-joined (e.g. after page reload)
+    if (this.roomCleanupTimers.has(roomId)) {
+      clearTimeout(this.roomCleanupTimers.get(roomId)!);
+      this.roomCleanupTimers.delete(roomId);
+    }
+
+    const { room, isNew } = this.getOrCreateRoom(roomId, initialVideoId);
+    if (initialVideoId && (isCreator || isNew) && !room.videoState.videoId) {
+      room.updateVideoState({ videoId: initialVideoId });
+    }
+
     const participant = new Participant(socketId, username);
     
     room.addParticipant(participant, preferredRole, isCreator);
@@ -130,9 +150,20 @@ export class RoomManager {
     let roomDeleted = false;
 
     if (room.isEmpty()) {
-      // Clean up empty room
-      this.rooms.delete(roomId);
-      roomDeleted = true;
+      // Clear any existing cleanup timer for this room
+      if (this.roomCleanupTimers.has(roomId)) {
+        clearTimeout(this.roomCleanupTimers.get(roomId)!);
+      }
+      // Schedule cleanup after a 60-second grace period to allow for page reloads
+      const timer = setTimeout(() => {
+        const r = this.rooms.get(roomId);
+        if (r && r.isEmpty()) {
+          this.rooms.delete(roomId);
+        }
+        this.roomCleanupTimers.delete(roomId);
+      }, 60000);
+      this.roomCleanupTimers.set(roomId, timer);
+      roomDeleted = false;
     } else if (wasHost) {
       // Transfer host role to the next participant
       newHost = room.assignNextHost();
@@ -152,6 +183,10 @@ export class RoomManager {
    * Deletes a room and cleans up socket mappings.
    */
   public removeRoom(roomId: string): boolean {
+    if (this.roomCleanupTimers.has(roomId)) {
+      clearTimeout(this.roomCleanupTimers.get(roomId)!);
+      this.roomCleanupTimers.delete(roomId);
+    }
     const room = this.rooms.get(roomId);
     if (!room) return false;
 

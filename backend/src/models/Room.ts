@@ -9,13 +9,13 @@ export class Room {
   private _videoState: VideoState;
   private _createdAt: number;
 
-  constructor(id: string, initialVideoId: string = 'dQw4w9WgXcQ') {
+  constructor(id: string, initialVideoId: string = '') {
     this._id = id;
     this._hostId = '';
     this._participants = new Map<string, Participant>();
     this._createdAt = Date.now();
     this._videoState = {
-      videoId: initialVideoId,
+      videoId: initialVideoId || '',
       currentTime: 0,
       playState: 'paused',
       lastUpdated: Date.now(),

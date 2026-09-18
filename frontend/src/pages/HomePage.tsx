@@ -51,8 +51,8 @@ export const HomePage: React.FC = () => {
     const rawId = customRoomId.trim() || generateRandomCode();
     const roomId = normalizeRoomId(rawId);
 
-    // Safely extract YouTube video ID if URL or ID provided, fallback to default
-    let cleanVideoId = 'dQw4w9WgXcQ';
+    // Safely extract YouTube video ID if URL or ID provided (no hardcoded fallback)
+    let cleanVideoId = '';
     if (initialVideoUrl.trim()) {
       const extracted = extractYouTubeVideoId(initialVideoUrl.trim());
       cleanVideoId = extracted || initialVideoUrl.trim();
@@ -62,6 +62,9 @@ export const HomePage: React.FC = () => {
     localStorage.setItem('syncparty_username', username);
     localStorage.setItem(`syncparty_room_${roomId}_role`, 'Host');
     localStorage.setItem(`syncparty_room_${roomId}_creator`, username);
+    if (cleanVideoId) {
+      localStorage.setItem(`syncparty_room_${roomId}_videoId`, cleanVideoId);
+    }
 
     setTimeout(() => {
       navigate(`/room/${roomId}`, {
